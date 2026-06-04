@@ -8,9 +8,17 @@ const config: Config = {
   ],
   theme: {
     extend: {
+      fontFamily: {
+        sans: ["var(--font-poppins)", "sans-serif"],
+      },
       colors: {
-        background: "var(--background)",
-        foreground: "var(--foreground)",
+        background: "#0A0F1C",
+        foreground: "#FFFFFF",
+        primary: "#1E3A5F",
+        secondary: "#0D99FF",
+        accent: "#00C2FF",
+        cardBg: "#111827",
+        sidebarBg: "#0E1525",
       },
     },
   },

@@ -1,101 +1,221 @@
-import Image from "next/image";
+"use client";
 
-export default function Home() {
+import { useEffect, useState } from "react";
+import Link from "next/link";
+import {
+  Users,
+  UserCheck,
+  MessageSquare,
+  XCircle,
+  FileText,
+  Upload,
+  ArrowRight,
+  TrendingUp,
+  Clock,
+} from "lucide-react";
+import StatsCard from "@/components/StatsCard";
+import { useApp } from "@/components/Providers";
+import { formatDate } from "@/lib/utils";
+
+interface UploadBatch {
+  id: string;
+  fileName: string;
+  totalRecords: number;
+  uploadedAt: string;
+}
+
+export default function Dashboard() {
+  const { sidebarCounts, refreshCounts } = useApp();
+  const [recentUploads, setRecentUploads] = useState<UploadBatch[]>([]);
+  const [isLoadingUploads, setIsLoadingUploads] = useState(true);
+
+  useEffect(() => {
+    refreshCounts();
+
+    const fetchRecentUploads = async () => {
+      try {
+        const res = await fetch("/api/uploads");
+        if (res.ok) {
+          const data = await res.json();
+          setRecentUploads(data.slice(0, 5));
+        }
+      } catch (error) {
+        console.error("Failed to load recent uploads:", error);
+      } finally {
+        setIsLoadingUploads(false);
+      }
+    };
+
+    fetchRecentUploads();
+  }, []);
+
   return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="https://nextjs.org/icons/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-semibold">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
-
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="https://nextjs.org/icons/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:min-w-44"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+    <div className="p-6 sm:p-8 w-full space-y-10 animate-fade-in text-slate-600">
+      {/* Welcome Header Banner */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-slate-100 border border-slate-200/80 p-6 sm:p-8 rounded-3xl shadow-sm">
+        <div>
+          <h1 className="text-2xl sm:text-4xl font-extrabold tracking-tight text-slate-800">
+            ForgeWeb Lead Manager
+          </h1>
+          <p className="text-sm text-slate-500 mt-2 font-medium">
+            Optimize your outreach process, track contacted accounts, and record pipeline feedback.
+          </p>
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-6 flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="https://nextjs.org/icons/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="https://nextjs.org/icons/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="https://nextjs.org/icons/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+        <div className="flex items-center space-x-2 shrink-0 self-start sm:self-center">
+          <TrendingUp className="text-[#0D99FF]" size={20} />
+          <span className="text-[10px] uppercase tracking-wider font-extrabold text-[#0D99FF] bg-[#0D99FF]/10 px-3 py-1.5 rounded-full border border-[#0D99FF]/20">
+            Performance active
+          </span>
+        </div>
+      </div>
+
+      {/* KPI Stats Grid */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-5">
+        <StatsCard
+          title="Total Leads"
+          value={sidebarCounts.all}
+          icon={Users}
+          color="indigo"
+          description="Total database records"
+        />
+        <StatsCard
+          title="New Leads"
+          value={sidebarCounts.new}
+          icon={Users}
+          color="blue"
+          description="Unprocessed records"
+        />
+        <StatsCard
+          title="Contacted"
+          value={sidebarCounts.contacted}
+          icon={UserCheck}
+          color="green"
+          description="Outreach initiated"
+        />
+        <StatsCard
+          title="Remarked"
+          value={sidebarCounts.remarked}
+          icon={MessageSquare}
+          color="amber"
+          description="Follow-up scheduled"
+        />
+        <StatsCard
+          title="Declined"
+          value={sidebarCounts.declined}
+          icon={XCircle}
+          color="red"
+          description="Rejected / Do Not Call"
+        />
+      </div>
+
+      {/* Bottom Panel Rows */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8">
+        {/* Recent Uploads */}
+        <div className="lg:col-span-2 bg-white border border-slate-200/80 rounded-3xl p-6 sm:p-8 shadow-sm flex flex-col justify-between">
+          <div>
+            <div className="flex items-center justify-between pb-5 border-b border-slate-100">
+              <h3 className="text-base sm:text-lg font-bold text-slate-800 flex items-center">
+                <Clock className="mr-2.5 text-[#0D99FF]" size={18} />
+                <span>Recent Uploads</span>
+              </h3>
+              <Link
+                href="/uploads"
+                className="text-xs sm:text-sm font-semibold text-[#0D99FF] hover:text-[#0575E6] flex items-center transition-colors"
+              >
+                <span>Manage files</span>
+                <ArrowRight size={12} className="ml-1" />
+              </Link>
+            </div>
+
+            <div className="mt-4 divide-y divide-slate-100">
+              {isLoadingUploads ? (
+                [1, 2, 3].map((n) => (
+                  <div key={n} className="py-4 flex items-center justify-between">
+                    <div className="shimmer h-10 w-2/3 rounded-lg" />
+                    <div className="shimmer h-6 w-16 rounded" />
+                  </div>
+                ))
+              ) : recentUploads.length === 0 ? (
+                <div className="py-12 text-center flex flex-col items-center">
+                  <FileText className="text-slate-400 mb-3" size={36} />
+                  <p className="text-sm font-bold text-slate-500">No uploads found</p>
+                  <p className="text-xs text-slate-400 mt-1.5 font-medium">Upload a CSV or Excel file to get started</p>
+                </div>
+              ) : (
+                recentUploads.map((batch) => (
+                  <div
+                    key={batch.id}
+                    className="py-4 flex items-center justify-between group/item hover:bg-slate-50 px-3 rounded-2xl transition-all"
+                  >
+                    <div className="min-w-0 flex-1 pr-3">
+                      <p className="text-sm font-bold text-slate-700 truncate group-hover/item:text-[#0D99FF] transition-colors">
+                        {batch.fileName}
+                      </p>
+                      <p className="text-xs text-slate-400 mt-1 font-medium">
+                        Uploaded on {formatDate(batch.uploadedAt)}
+                      </p>
+                    </div>
+                    <div className="text-right shrink-0">
+                      <span className="inline-block bg-[#0D99FF]/10 text-[#0D99FF] border border-[#0D99FF]/20 text-xs font-bold px-3 py-1 rounded-full">
+                        {batch.totalRecords} records
+                      </span>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Quick Operations */}
+        <div className="bg-white border border-slate-200/80 rounded-3xl p-6 sm:p-8 shadow-sm flex flex-col justify-between">
+          <div>
+            <h3 className="text-base sm:text-lg font-bold text-slate-800 border-b border-slate-100 pb-5">
+              Quick Operations
+            </h3>
+
+            <div className="mt-6 space-y-4">
+              <Link
+                href="/uploads"
+                className="flex items-center justify-between p-4 rounded-2xl bg-slate-50 hover:bg-slate-100/50 border border-slate-200/80 hover:border-[#0D99FF]/40 hover:shadow-sm transition-all group"
+              >
+                <div className="flex items-center space-x-3.5">
+                  <div className="p-3 bg-blue-50 text-[#0D99FF] rounded-xl border border-blue-100">
+                    <Upload size={16} />
+                  </div>
+                  <div>
+                    <span className="text-sm font-bold text-slate-700 block transition-colors group-hover:text-[#0D99FF]">Upload Sheet</span>
+                    <span className="text-xs text-slate-400 block mt-0.5 font-medium">Import new contacts</span>
+                  </div>
+                </div>
+                <ArrowRight
+                  size={16}
+                  className="text-slate-400 group-hover:text-[#0D99FF] transform group-hover:translate-x-1 transition-all"
+                />
+              </Link>
+
+              <Link
+                href="/leads"
+                className="flex items-center justify-between p-4 rounded-2xl bg-slate-50 hover:bg-slate-100/50 border border-slate-200/80 hover:border-[#0D99FF]/40 hover:shadow-sm transition-all group"
+              >
+                <div className="flex items-center space-x-3.5">
+                  <div className="p-3 bg-emerald-50 text-emerald-600 rounded-xl border border-emerald-100">
+                    <Users size={16} />
+                  </div>
+                  <div>
+                    <span className="text-sm font-bold text-slate-700 block transition-colors group-hover:text-[#0D99FF]">View Leads</span>
+                    <span className="text-xs text-slate-400 block mt-0.5 font-medium">Browse CRM contacts</span>
+                  </div>
+                </div>
+                <ArrowRight
+                  size={16}
+                  className="text-slate-400 group-hover:text-[#0D99FF] transform group-hover:translate-x-1 transition-all"
+                />
+              </Link>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

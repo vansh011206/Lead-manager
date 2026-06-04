@@ -1,0 +1,54 @@
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Lead {
+  id                         String       @id @default(auto()) @map("_id") @db.ObjectId
+  rowNum                     Int?
+  prospectFullName           String
+  prospectJobTitle           String?
+  prospectLinkedin           String?
+  businessName               String?
+  businessWebsite            String?
+  businessNumberOfEmployees  String?
+  businessYearlyRevenue      String?
+  businessCountry            String?
+  businessRegion             String?
+  businessNaicsDescription   String?
+  contactProfessionalEmail   String?
+  contactEmails              String?
+  contactMobilePhone         String?
+  contactPhoneNumbers        String?
+  prospectId                 String?
+  businessId                 String?
+  status                     String       @default("new")
+  remark                     String?
+  uploadBatchId              String?      @db.ObjectId
+  uploadBatch                UploadBatch? @relation(fields: [uploadBatchId], references: [id], onDelete: Cascade)
+  createdAt                  DateTime     @default(now())
+  updatedAt                  DateTime     @updatedAt
+  originalCreatedAt          String?
+}
+
+model UploadBatch {
+  id             String   @id @default(auto()) @map("_id") @db.ObjectId
+  fileName       String
+  totalRecords   Int
+  uploadedAt     DateTime @default(now())
+  columnMapping  String?
+  leads          Lead[]
+}
+
+model User {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  email     String   @unique
+  name      String
+  password  String
+  role      String   @default("admin")
+  createdAt DateTime @default(now())
+}
