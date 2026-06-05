@@ -6,6 +6,7 @@ import { XCircle, HelpCircle, ChevronLeft, ChevronRight } from "lucide-react";
 import FilterBar from "@/components/FilterBar";
 import LeadsTable from "@/components/LeadsTable";
 import Link from "next/link";
+import { useApp } from "@/components/Providers";
 
 interface Lead {
   id: string;
@@ -41,6 +42,7 @@ function DeclinedLeadsPageContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const pathname = usePathname();
+  const { refreshCounts } = useApp();
 
   const [leads, setLeads] = useState<Lead[]>([]);
   const [total, setTotal] = useState(0);
@@ -143,7 +145,7 @@ function DeclinedLeadsPageContent() {
         <LeadsTable
           leads={leads as any}
           filterParams={filterParamsString}
-          onRefresh={() => setRefreshTrigger((prev) => prev + 1)}
+          onRefresh={() => { setRefreshTrigger((prev) => prev + 1); refreshCounts(); }}
         />
       )}
 
