@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef } from "react";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
-import { Search, X, SlidersHorizontal } from "lucide-react";
+import { Search, X, SlidersHorizontal, ArrowUpDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface FilterBarProps {
@@ -36,6 +36,15 @@ export default function FilterBar({
   const currentIndustry = searchParams.get("industry") || "all";
   const currentBatch = searchParams.get("batchId") || "all";
   const currentSort = searchParams.get("sortBy") || "date_desc";
+
+  const hasActiveDropdownFilters =
+    (!fixedStatus && currentStatus !== "all") ||
+    (currentCountry !== "all") ||
+    (currentRegion !== "all") ||
+    (currentIndustry !== "all") ||
+    (currentBatch !== "all");
+
+  const [isExpanded, setIsExpanded] = useState(hasActiveDropdownFilters);
 
   useEffect(() => {
     if (isInitialMount.current) {
@@ -78,16 +87,12 @@ export default function FilterBar({
 
   const hasActiveFilters =
     (searchTerm !== "") ||
-    (!fixedStatus && currentStatus !== "all") ||
-    (currentCountry !== "all") ||
-    (currentRegion !== "all") ||
-    (currentIndustry !== "all") ||
-    (currentBatch !== "all");
+    hasActiveDropdownFilters;
 
   return (
     <div className="bg-white border border-slate-200/80 rounded-3xl p-6 shadow-sm">
       <div className="flex flex-col gap-4">
-        {/* Search & Sort Header */}
+        {/* Search & Sort & Filter Header */}
         <div className="flex flex-col lg:flex-row gap-3 lg:items-center justify-between">
           {/* Search Box */}
           <div className="relative flex-1">
@@ -109,114 +114,141 @@ export default function FilterBar({
             )}
           </div>
 
-          {/* Sort Dropdown */}
-          <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center">
-            <div className="flex items-center space-x-2 shrink-0">
-              <SlidersHorizontal size={13} className="text-[#0D99FF]" />
-              <span className="text-xs font-bold uppercase tracking-wider text-slate-500">Sort By</span>
+          {/* Sort & Filter Controls */}
+          <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center shrink-0">
+            {/* Sort Dropdown */}
+            <div className="flex items-center gap-2 flex-1 sm:flex-initial">
+              <div className="flex items-center space-x-2 shrink-0">
+                <ArrowUpDown size={13} className="text-[#0D99FF]" />
+                <span className="text-xs font-bold uppercase tracking-wider text-slate-500">Sort By</span>
+              </div>
+              <select
+                value={currentSort}
+                onChange={(e) => updateQueryParam("sortBy", e.target.value)}
+                className="py-2.5 px-4 rounded-xl bg-slate-50 border border-slate-200/80 text-sm text-slate-655 focus:outline-none focus:bg-white focus:border-[#0D99FF] transition-all"
+              >
+                <option value="date_desc">Date Added (Newest)</option>
+                <option value="date_asc">Date Added (Oldest)</option>
+                <option value="name_asc">Name (A-Z)</option>
+                <option value="name_desc">Name (Z-A)</option>
+                <option value="company">Company Name (A-Z)</option>
+              </select>
             </div>
-            <select
-              value={currentSort}
-              onChange={(e) => updateQueryParam("sortBy", e.target.value)}
-              className="py-2.5 px-4 rounded-xl bg-slate-50 border border-slate-200/80 text-sm text-slate-650 focus:outline-none focus:bg-white focus:border-[#0D99FF] transition-all"
+
+            {/* Apply Filters Toggle Button */}
+            <button
+              onClick={() => setIsExpanded(!isExpanded)}
+              className={cn(
+                "flex items-center justify-center space-x-2 px-4.5 py-2.5 rounded-xl border font-bold text-xs uppercase tracking-widest transition-all duration-250 shrink-0",
+                isExpanded
+                  ? "bg-[#0D99FF]/10 border-[#0D99FF]/30 text-[#0D99FF] hover:bg-[#0D99FF]/15"
+                  : "bg-white hover:bg-slate-50 border-slate-200 text-slate-600 hover:text-slate-800"
+              )}
             >
-              <option value="date_desc">Date Added (Newest)</option>
-              <option value="date_asc">Date Added (Oldest)</option>
-              <option value="name_asc">Name (A-Z)</option>
-              <option value="name_desc">Name (Z-A)</option>
-              <option value="company">Company Name (A-Z)</option>
-            </select>
+              <SlidersHorizontal size={13} className={isExpanded ? "text-[#0D99FF]" : "text-slate-500"} />
+              <span>Apply Filters</span>
+              {hasActiveDropdownFilters && (
+                <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse ml-1 shrink-0" />
+              )}
+            </button>
           </div>
         </div>
 
-        {/* Dropdowns Row */}
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 border-t border-slate-100 pt-4">
-          {/* Status */}
-          <div className="flex flex-col space-y-1.5">
-            <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Status</label>
-            <select
-              value={currentStatus}
-              onChange={(e) => updateQueryParam("status", e.target.value)}
-              disabled={!!fixedStatus}
-              className={cn(
-                "w-full py-2 px-3 rounded-lg bg-slate-50 border border-slate-200/80 text-xs text-slate-655 focus:outline-none focus:bg-white focus:border-[#0D99FF] transition-all",
-                fixedStatus && "opacity-50 cursor-not-allowed"
-              )}
-            >
-              <option value="all">All Statuses</option>
-              <option value="new">New</option>
-              <option value="contacted">Contacted</option>
-              <option value="remarked">Remarked</option>
-              <option value="declined">Declined</option>
-            </select>
-          </div>
+        {/* Dropdowns Row with Sliding Transition */}
+        <div
+          className={cn(
+            "transition-all duration-300 ease-in-out overflow-hidden border-slate-100",
+            isExpanded ? "max-h-[300px] opacity-100 mt-2 border-t pt-4" : "max-h-0 opacity-0 mt-0 pt-0 border-t-0"
+          )}
+        >
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 pb-2">
+            {/* Status */}
+            <div className="flex flex-col space-y-1.5">
+              <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Status</label>
+              <select
+                value={currentStatus}
+                onChange={(e) => updateQueryParam("status", e.target.value)}
+                disabled={!!fixedStatus}
+                className={cn(
+                  "w-full py-2 px-3 rounded-lg bg-slate-50 border border-slate-200/80 text-xs text-slate-655 focus:outline-none focus:bg-white focus:border-[#0D99FF] transition-all",
+                  fixedStatus && "opacity-50 cursor-not-allowed"
+                )}
+              >
+                <option value="all">All Statuses</option>
+                <option value="new">New</option>
+                <option value="contacted">Contacted</option>
+                <option value="remarked">Remarked</option>
+                <option value="declined">Declined</option>
+              </select>
+            </div>
 
-          {/* Country */}
-          <div className="flex flex-col space-y-1.5">
-            <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Country</label>
-            <select
-              value={currentCountry}
-              onChange={(e) => updateQueryParam("country", e.target.value)}
-              className="w-full py-2 px-3 rounded-lg bg-slate-50 border border-slate-200/80 text-xs text-slate-655 focus:outline-none focus:bg-white focus:border-[#0D99FF] transition-all"
-            >
-              <option value="all">All Countries</option>
-              {filterOptions.countries.map((c) => (
-                <option key={c} value={c}>
-                  {c}
-                </option>
-              ))}
-            </select>
-          </div>
+            {/* Country */}
+            <div className="flex flex-col space-y-1.5">
+              <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Country</label>
+              <select
+                value={currentCountry}
+                onChange={(e) => updateQueryParam("country", e.target.value)}
+                className="w-full py-2 px-3 rounded-lg bg-slate-50 border border-slate-200/80 text-xs text-slate-655 focus:outline-none focus:bg-white focus:border-[#0D99FF] transition-all"
+              >
+                <option value="all">All Countries</option>
+                {filterOptions.countries.map((c) => (
+                  <option key={c} value={c}>
+                    {c}
+                  </option>
+                ))}
+              </select>
+            </div>
 
-          {/* Region */}
-          <div className="flex flex-col space-y-1.5">
-            <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Region</label>
-            <select
-              value={currentRegion}
-              onChange={(e) => updateQueryParam("region", e.target.value)}
-              className="w-full py-2 px-3 rounded-lg bg-slate-50 border border-slate-200/80 text-xs text-slate-655 focus:outline-none focus:bg-white focus:border-[#0D99FF] transition-all"
-            >
-              <option value="all">All Regions</option>
-              {filterOptions.regions.map((r) => (
-                <option key={r} value={r}>
-                  {r}
-                </option>
-              ))}
-            </select>
-          </div>
+            {/* Region */}
+            <div className="flex flex-col space-y-1.5">
+              <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Region</label>
+              <select
+                value={currentRegion}
+                onChange={(e) => updateQueryParam("region", e.target.value)}
+                className="w-full py-2 px-3 rounded-lg bg-slate-50 border border-slate-200/80 text-xs text-slate-655 focus:outline-none focus:bg-white focus:border-[#0D99FF] transition-all"
+              >
+                <option value="all">All Regions</option>
+                {filterOptions.regions.map((r) => (
+                  <option key={r} value={r}>
+                    {r}
+                  </option>
+                ))}
+              </select>
+            </div>
 
-          {/* Industry */}
-          <div className="flex flex-col space-y-1.5">
-            <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Industry</label>
-            <select
-              value={currentIndustry}
-              onChange={(e) => updateQueryParam("industry", e.target.value)}
-              className="w-full py-2 px-3 rounded-lg bg-slate-50 border border-slate-200/80 text-xs text-slate-655 focus:outline-none focus:bg-white focus:border-[#0D99FF] transition-all"
-            >
-              <option value="all">All Industries</option>
-              {filterOptions.industries.map((ind) => (
-                <option key={ind} value={ind}>
-                  {ind}
-                </option>
-              ))}
-            </select>
-          </div>
+            {/* Industry */}
+            <div className="flex flex-col space-y-1.5">
+              <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Industry</label>
+              <select
+                value={currentIndustry}
+                onChange={(e) => updateQueryParam("industry", e.target.value)}
+                className="w-full py-2 px-3 rounded-lg bg-slate-50 border border-slate-200/80 text-xs text-slate-655 focus:outline-none focus:bg-white focus:border-[#0D99FF] transition-all"
+              >
+                <option value="all">All Industries</option>
+                {filterOptions.industries.map((ind) => (
+                  <option key={ind} value={ind}>
+                    {ind}
+                  </option>
+                ))}
+              </select>
+            </div>
 
-          {/* Batch */}
-          <div className="flex flex-col space-y-1.5 col-span-2 sm:col-span-1">
-            <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Upload Batch</label>
-            <select
-              value={currentBatch}
-              onChange={(e) => updateQueryParam("batchId", e.target.value)}
-              className="w-full py-2 px-3 rounded-lg bg-slate-50 border border-slate-200/80 text-xs text-slate-655 focus:outline-none focus:bg-white focus:border-[#0D99FF] transition-all"
-            >
-              <option value="all">All Batches</option>
-              {filterOptions.batches.map((b) => (
-                <option key={b.id} value={b.id}>
-                  {b.fileName}
-                </option>
-              ))}
-            </select>
+            {/* Batch */}
+            <div className="flex flex-col space-y-1.5 col-span-2 sm:col-span-1">
+              <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Upload Batch</label>
+              <select
+                value={currentBatch}
+                onChange={(e) => updateQueryParam("batchId", e.target.value)}
+                className="w-full py-2 px-3 rounded-lg bg-slate-50 border border-slate-200/80 text-xs text-slate-655 focus:outline-none focus:bg-white focus:border-[#0D99FF] transition-all"
+              >
+                <option value="all">All Batches</option>
+                {filterOptions.batches.map((b) => (
+                  <option key={b.id} value={b.id}>
+                    {b.fileName}
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
         </div>
 

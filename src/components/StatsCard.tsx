@@ -1,6 +1,7 @@
 import React from "react";
 import { cn } from "@/lib/utils";
 import { LucideIcon } from "lucide-react";
+import Link from "next/link";
 
 interface StatsCardProps {
   title: string;
@@ -8,6 +9,7 @@ interface StatsCardProps {
   icon: LucideIcon;
   color: "blue" | "green" | "amber" | "red" | "white" | "indigo";
   description?: string;
+  href?: string;
 }
 
 export default function StatsCard({
@@ -16,6 +18,7 @@ export default function StatsCard({
   icon: Icon,
   color,
   description,
+  href,
 }: StatsCardProps) {
   const themes = {
     blue: {
@@ -45,7 +48,7 @@ export default function StatsCard({
     red: {
       border: "border-slate-200/80 hover:border-red-500/40",
       glow: "hover:shadow-red-500/5",
-      iconBg: "bg-red-50 text-red-650",
+      iconBg: "bg-red-50 text-red-655",
       accent: "text-slate-800 group-hover:text-red-600",
     },
     white: {
@@ -58,14 +61,8 @@ export default function StatsCard({
 
   const currentTheme = themes[color];
 
-  return (
-    <div
-      className={cn(
-        "group relative overflow-hidden rounded-3xl bg-white border p-6 sm:p-8 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_12px_24px_rgba(15,23,42,0.03)]",
-        currentTheme.border,
-        currentTheme.glow
-      )}
-    >
+  const CardContent = (
+    <>
       <div className="flex items-center justify-between">
         <span className="text-xs sm:text-sm font-bold text-slate-500 uppercase tracking-wider">
           {title}
@@ -86,6 +83,27 @@ export default function StatsCard({
           {description}
         </p>
       )}
+    </>
+  );
+
+  const containerClass = cn(
+    "group relative overflow-hidden rounded-3xl bg-white border p-6 sm:p-8 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_12px_24px_rgba(15,23,42,0.03)]",
+    currentTheme.border,
+    currentTheme.glow,
+    href && "cursor-pointer"
+  );
+
+  if (href) {
+    return (
+      <Link href={href} className={containerClass}>
+        {CardContent}
+      </Link>
+    );
+  }
+
+  return (
+    <div className={containerClass}>
+      {CardContent}
     </div>
   );
 }

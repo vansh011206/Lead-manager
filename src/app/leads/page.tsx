@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
-import { Users, ChevronLeft, ChevronRight, HelpCircle } from "lucide-react";
+import { Users, ChevronLeft, ChevronRight, HelpCircle, PhoneCall, MessageSquare, XCircle } from "lucide-react";
 import FilterBar from "@/components/FilterBar";
 import LeadsTable from "@/components/LeadsTable";
 import Link from "next/link";
@@ -58,13 +58,59 @@ function LeadsPageContent() {
   });
 
   const currentPage = parseInt(searchParams.get("page") || "1", 10);
+  const currentStatus = searchParams.get("status") || "new";
+
+  const getHeaderInfo = () => {
+    switch (currentStatus) {
+      case "all":
+        return {
+          title: "All Leads",
+          description: "Complete list of all prospects in the database across all statuses.",
+          icon: Users,
+          iconColor: "text-indigo-500",
+        };
+      case "contacted":
+        return {
+          title: "Contacted Leads",
+          description: "Prospects that have been contacted by your sales reps.",
+          icon: PhoneCall,
+          iconColor: "text-emerald-500",
+        };
+      case "remarked":
+        return {
+          title: "Remarked Leads",
+          description: "Leads with follow-up remarks or feedback scheduled.",
+          icon: MessageSquare,
+          iconColor: "text-amber-500",
+        };
+      case "declined":
+        return {
+          title: "Declined Leads",
+          description: "Prospects that have been declined or marked as not interested.",
+          icon: XCircle,
+          iconColor: "text-red-500",
+        };
+      case "new":
+      default:
+        return {
+          title: "New Leads",
+          description: "Leads awaiting action. Once contacted, remarked, or declined they move to respective sections.",
+          icon: Users,
+          iconColor: "text-[#0D99FF]",
+        };
+    }
+  };
+
+  const headerInfo = getHeaderInfo();
 
   useEffect(() => {
     const fetchLeads = async () => {
       try {
         setIsLoading(true);
         const params = new URLSearchParams(searchParams.toString());
-        params.set("status", "new");
+        if (!params.has("status")) {
+          params.set("status", "new");
+        }
         const res = await fetch(`/api/leads?${params.toString()}`);
         if (res.ok) {
           const data = await res.json();
@@ -94,17 +140,19 @@ function LeadsPageContent() {
   const endIndex = Math.min(currentPage * 20, total);
   const filterParamsString = searchParams.toString();
 
+  const HeaderIcon = headerInfo.icon;
+
   return (
     <div className="p-4 sm:p-8 w-full space-y-8 animate-fade-in text-slate-600">
       {/* Title */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-2xl sm:text-4xl font-extrabold tracking-tight text-slate-800 flex items-center">
-            <Users className="mr-3 text-[#0D99FF]" size={28} />
-            <span>New Leads</span>
+            <HeaderIcon className={`mr-3 ${headerInfo.iconColor}`} size={28} />
+            <span>{headerInfo.title}</span>
           </h1>
           <p className="text-sm text-slate-500 mt-2 font-medium">
-            Leads awaiting action. Once contacted, remarked, or declined they move to respective sections.
+            {headerInfo.description}
           </p>
         </div>
       </div>

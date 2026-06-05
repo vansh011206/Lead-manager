@@ -77,6 +77,7 @@ export default function Dashboard() {
           icon={Users}
           color="indigo"
           description="Total database records"
+          href="/leads?status=all"
         />
         <StatsCard
           title="New Leads"
@@ -84,6 +85,7 @@ export default function Dashboard() {
           icon={Users}
           color="blue"
           description="Unprocessed records"
+          href="/leads?status=new"
         />
         <StatsCard
           title="Contacted"
@@ -91,6 +93,7 @@ export default function Dashboard() {
           icon={UserCheck}
           color="green"
           description="Outreach initiated"
+          href="/contacted"
         />
         <StatsCard
           title="Remarked"
@@ -98,6 +101,7 @@ export default function Dashboard() {
           icon={MessageSquare}
           color="amber"
           description="Follow-up scheduled"
+          href="/remarked"
         />
         <StatsCard
           title="Declined"
@@ -105,6 +109,7 @@ export default function Dashboard() {
           icon={XCircle}
           color="red"
           description="Rejected / Do Not Call"
+          href="/declined"
         />
       </div>
 
@@ -143,9 +148,10 @@ export default function Dashboard() {
                 </div>
               ) : (
                 recentUploads.map((batch) => (
-                  <div
+                  <Link
                     key={batch.id}
-                    className="py-4 flex items-center justify-between group/item hover:bg-slate-50 px-3 rounded-2xl transition-all"
+                    href={`/leads?batchId=${batch.id}&status=all`}
+                    className="py-4 flex items-center justify-between group/item hover:bg-slate-50 px-3 rounded-2xl transition-all cursor-pointer block"
                   >
                     <div className="min-w-0 flex-1 pr-3">
                       <p className="text-sm font-bold text-slate-700 truncate group-hover/item:text-[#0D99FF] transition-colors">
@@ -160,7 +166,7 @@ export default function Dashboard() {
                         {batch.totalRecords} records
                       </span>
                     </div>
-                  </div>
+                  </Link>
                 ))
               )}
             </div>
