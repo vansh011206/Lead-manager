@@ -90,7 +90,7 @@ export default function UploadHistory({ batches, isLoading, onDeleteSuccess }: U
       </div>
 
       {batches.length === 0 ? (
-        <div className="bg-white border border-slate-200 rounded-2xl p-10 flex flex-col items-center justify-center text-center shadow-sm">
+        <div className="bg-white border border-slate-200/80 rounded-3xl p-10 flex flex-col items-center justify-center text-center shadow-sm">
           <Database size={36} className="text-slate-400 mb-3" />
           <p className="text-sm font-bold text-slate-700">No Upload History</p>
           <p className="text-xs text-slate-400 mt-1 font-medium">
@@ -102,7 +102,7 @@ export default function UploadHistory({ batches, isLoading, onDeleteSuccess }: U
           {batches.map((batch) => (
             <div
               key={batch.id}
-              className={`group relative flex flex-col justify-between overflow-hidden rounded-2xl bg-white border border-slate-200 p-5 hover:border-[#0D99FF]/40 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_8px_20px_rgba(0,0,0,0.02)] ${deletingId === batch.id ? "opacity-50 pointer-events-none" : ""}`}
+              className={`group relative flex flex-col justify-between overflow-hidden rounded-3xl bg-white border border-slate-200/80 p-6 hover:border-[#0D99FF]/40 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_12px_32px_rgba(15,23,42,0.04)] shadow-sm ${deletingId === batch.id ? "opacity-50 pointer-events-none" : ""}`}
             >
               {/* Card top */}
               <div className="space-y-3">

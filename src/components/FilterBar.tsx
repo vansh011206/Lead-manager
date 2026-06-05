@@ -58,7 +58,7 @@ export default function FilterBar({
     const params = new URLSearchParams(searchParams.toString());
     params.set("page", "1");
 
-    if (value === "all" || !value) {
+    if (!value) {
       params.delete(key);
     } else {
       params.set(key, value);
@@ -85,7 +85,7 @@ export default function FilterBar({
     (currentBatch !== "all");
 
   return (
-    <div className="bg-white border border-slate-200/90 rounded-2xl p-5 shadow-[0_4px_24px_rgba(15,23,42,0.03)]">
+    <div className="bg-white border border-slate-200/80 rounded-3xl p-6 shadow-sm">
       <div className="flex flex-col gap-4">
         {/* Search & Sort Header */}
         <div className="flex flex-col lg:flex-row gap-3 lg:items-center justify-between">

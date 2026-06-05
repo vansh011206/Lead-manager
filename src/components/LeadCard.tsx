@@ -84,7 +84,7 @@ export default function LeadCard({ lead, filterParams = "" }: LeadCardProps) {
           <div
             className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl flex items-center justify-center font-extrabold text-white text-lg sm:text-2xl shadow-sm shrink-0 transition-transform duration-300 group-hover:scale-102"
             style={{
-              background: `linear-gradient(135deg, ${gradient.from}, ${gradient.to})`,
+              backgroundColor: gradient.from,
             }}
           >
             {initials}

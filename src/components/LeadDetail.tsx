@@ -152,11 +152,11 @@ export default function LeadDetail({ lead, backUrl, onAction, isLoading, hasNext
 
       {/* Profile Header Block */}
       <div className="relative overflow-hidden rounded-3xl border border-slate-200/80 bg-white shadow-sm">
-        {/* Banner with gradient generated from name */}
+        {/* Banner with solid background color generated from name */}
         <div
           className="h-28 relative"
           style={{
-            background: `linear-gradient(135deg, ${nameGradient.from}, ${nameGradient.to})`,
+            backgroundColor: nameGradient.from,
           }}
         >
           <div className="absolute top-6 right-6">
@@ -496,24 +496,24 @@ export default function LeadDetail({ lead, backUrl, onAction, isLoading, hasNext
       </div>
 
       {/* Floating Action Dock Panel */}
-      <div className="fixed bottom-4 sm:bottom-6 left-1/2 -translate-x-1/2 z-40 w-full max-w-3xl px-3 sm:px-4 animate-scale-up">
-        <div className="bg-[#121A2E]/97 backdrop-blur-lg border border-[#0D99FF]/35 shadow-[0_20px_50px_rgba(13,153,255,0.22)] rounded-2xl p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div className="min-w-0 flex-1 hidden sm:block">
-            <p className="text-[10px] font-extrabold text-[#00C2FF] uppercase tracking-widest truncate">
+      <div className="fixed bottom-4 sm:bottom-6 left-1/2 -translate-x-1/2 z-40 w-full max-w-3xl lg:max-w-4xl px-3 sm:px-4 animate-scale-up">
+        <div className="bg-white border border-slate-200 shadow-xl rounded-2xl p-3 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="w-[280px] pr-4 hidden sm:block shrink-0">
+            <p className="text-[10px] font-extrabold text-[#0D99FF] uppercase tracking-widest">
               Outreach Status Action
             </p>
-            <p className="text-lg font-extrabold text-white truncate mt-1">
+            <p className="text-base font-extrabold text-slate-800 mt-1 whitespace-normal break-words leading-tight">
               {lead.prospectFullName}
             </p>
           </div>
-          <div className="flex items-center justify-center gap-3 shrink-0 w-full sm:w-auto">
+          <div className="flex items-center justify-center gap-2 sm:gap-3 shrink-0 w-full sm:w-auto">
             {/* Declined button */}
             <button
               onClick={() => handleStatusChange("declined")}
               disabled={isLoading}
-              className="flex-1 sm:flex-initial flex items-center justify-center space-x-2 px-5 py-3 rounded-xl border-2 border-red-500/50 bg-red-500/10 hover:bg-red-650 hover:border-red-650 text-red-400 hover:text-white text-xs sm:text-sm font-bold uppercase tracking-wider transition-all duration-250 shadow-md hover:shadow-red-500/25 disabled:opacity-50"
+              className="flex-1 sm:flex-initial flex items-center justify-center space-x-1 sm:space-x-2 px-2.5 sm:px-5 py-2.5 sm:py-3 rounded-xl border border-red-200 bg-red-50 hover:bg-red-650 hover:border-red-650 text-red-600 hover:text-white text-[10px] sm:text-xs md:text-sm font-bold uppercase tracking-wider transition-all duration-250 shadow-sm disabled:opacity-50"
             >
-              <XCircle size={16} className="shrink-0" />
+              <XCircle size={14} className="shrink-0 sm:w-4 sm:h-4" />
               <span>Decline</span>
             </button>
 
@@ -521,9 +521,9 @@ export default function LeadDetail({ lead, backUrl, onAction, isLoading, hasNext
             <button
               onClick={() => setRemarkOpen(true)}
               disabled={isLoading}
-              className="flex-1 sm:flex-initial flex items-center justify-center space-x-2 px-5 py-3 rounded-xl border-2 border-amber-500/50 bg-amber-500/10 hover:bg-amber-550 hover:border-amber-550 text-amber-400 hover:text-white text-xs sm:text-sm font-bold uppercase tracking-wider transition-all duration-250 shadow-md hover:shadow-amber-500/25 disabled:opacity-50"
+              className="flex-1 sm:flex-initial flex items-center justify-center space-x-1 sm:space-x-2 px-2.5 sm:px-5 py-2.5 sm:py-3 rounded-xl border border-amber-200 bg-amber-50 hover:bg-amber-600 hover:border-amber-600 text-amber-700 hover:text-white text-[10px] sm:text-xs md:text-sm font-bold uppercase tracking-wider transition-all duration-250 shadow-sm disabled:opacity-50"
             >
-              <MessageSquare size={16} className="shrink-0" />
+              <MessageSquare size={14} className="shrink-0 sm:w-4 sm:h-4" />
               <span>Remark</span>
             </button>
 
@@ -531,11 +531,11 @@ export default function LeadDetail({ lead, backUrl, onAction, isLoading, hasNext
             <button
               onClick={() => handleStatusChange("contacted")}
               disabled={isLoading}
-              className="flex-1 sm:flex-initial flex items-center justify-center space-x-2 px-6 py-3 rounded-xl bg-[#10B981] border-2 border-emerald-500 hover:bg-emerald-600 hover:border-emerald-650 text-white text-xs sm:text-sm font-extrabold uppercase tracking-widest transition-all duration-250 shadow-lg hover:shadow-emerald-550/35 disabled:opacity-50"
+              className="flex-1 sm:flex-initial flex items-center justify-center space-x-1 sm:space-x-2 px-3 sm:px-6 py-2.5 sm:py-3 rounded-xl bg-[#10B981] border border-emerald-500 hover:bg-emerald-600 hover:border-emerald-600 text-white text-[10px] sm:text-xs md:text-sm font-extrabold uppercase tracking-widest transition-all duration-250 shadow-sm disabled:opacity-50"
             >
-              <Check size={16} className="shrink-0" />
+              <Check size={14} className="shrink-0 sm:w-4 sm:h-4" />
               <span className="hidden sm:inline">Mark </span><span>Contacted</span>
-              {hasNext && <ChevronRight size={14} className="ml-0.5 shrink-0" />}
+              {hasNext && <ChevronRight size={12} className="ml-0.5 shrink-0 sm:w-3.5 sm:h-3.5" />}
             </button>
           </div>
         </div>

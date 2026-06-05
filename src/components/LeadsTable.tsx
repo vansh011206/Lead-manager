@@ -42,6 +42,7 @@ interface Lead {
   createdAt: string;
   updatedAt: string;
   rawData?: string | null;
+  uploadBatch?: { id: string; fileName: string; uploadedAt: string } | null;
 }
 
 interface LeadsTableProps {
@@ -130,26 +131,6 @@ export default function LeadsTable({ leads, filterParams = "", onRefresh }: Lead
     }
   };
 
-  // Get all unique keys from rawData across all leads being displayed
-  const getDynamicHeaders = () => {
-    const keysSet = new Set<string>();
-    leads.forEach((lead) => {
-      if (lead.rawData) {
-        try {
-          const parsed = JSON.parse(lead.rawData);
-          Object.keys(parsed).forEach((key) => {
-            if (key.trim()) {
-              keysSet.add(key.trim());
-            }
-          });
-        } catch {}
-      }
-    });
-    return Array.from(keysSet);
-  };
-
-  const dynamicHeaders = getDynamicHeaders();
-
   // Smart Cell Renderer
   const renderCell = (headerName: string, value: any) => {
     if (value === undefined || value === null || String(value).trim() === "") {
@@ -212,8 +193,8 @@ export default function LeadsTable({ leads, filterParams = "", onRefresh }: Lead
     }
 
     // Name column with avatar initials
-    const nameKeywords = ["name", "fullname", "prospectfullname", "contactname", "leadname", "personname", "clientname", "customername"];
-    if (nameKeywords.includes(normalizedHeader)) {
+    const nameKeywords = ["name", "fullname", "prospectfullname", "contactname", "leadname", "personname", "clientname", "customername", "hotelname", "companyname", "businessname", "company", "prospect"];
+    if (nameKeywords.includes(normalizedHeader) || normalizedHeader.includes("name") || normalizedHeader === "company" || normalizedHeader === "prospect") {
       const gradient = getNameColor(valStr);
       const initials = getNameInitials(valStr);
       return (
@@ -221,7 +202,7 @@ export default function LeadsTable({ leads, filterParams = "", onRefresh }: Lead
           <div
             className="w-8 h-8 rounded-lg flex items-center justify-center font-extrabold text-white text-[10px] sm:text-xs shadow-sm shrink-0"
             style={{
-              background: `linear-gradient(135deg, ${gradient.from}, ${gradient.to})`,
+              backgroundColor: gradient.from,
             }}
           >
             {initials}
@@ -233,269 +214,397 @@ export default function LeadsTable({ leads, filterParams = "", onRefresh }: Lead
       );
     }
 
+    // Location / Address with MapPin icon
+    if (
+      normalizedHeader.includes("location") ||
+      normalizedHeader.includes("address") ||
+      normalizedHeader.includes("city") ||
+      normalizedHeader.includes("country") ||
+      normalizedHeader.includes("region") ||
+      normalizedHeader.includes("state")
+    ) {
+      return (
+        <span className="flex items-center text-slate-600 font-medium">
+          <MapPin size={12} className="mr-1.5 text-slate-400 shrink-0" />
+          <span className="truncate max-w-[180px]">{valStr}</span>
+        </span>
+      );
+    }
+
+    // Job Title / Role / Type with Briefcase icon
+    if (
+      normalizedHeader.includes("job") ||
+      normalizedHeader.includes("title") ||
+      normalizedHeader.includes("role") ||
+      normalizedHeader.includes("position") ||
+      normalizedHeader.includes("type")
+    ) {
+      return (
+        <span className="flex items-center text-slate-600 font-medium">
+          <Briefcase size={12} className="mr-1.5 text-slate-400 shrink-0" />
+          <span className="truncate max-w-[180px]">{valStr}</span>
+        </span>
+      );
+    }
+
+    // Industry / Niche / Category with Layers icon
+    if (
+      normalizedHeader.includes("industry") ||
+      normalizedHeader.includes("niche") ||
+      normalizedHeader.includes("category") ||
+      normalizedHeader.includes("sector") ||
+      normalizedHeader.includes("naics")
+    ) {
+      return (
+        <span className="flex items-center text-slate-600 font-medium">
+          <Layers size={12} className="mr-1.5 text-slate-400 shrink-0" />
+          <span className="truncate max-w-[180px]">{valStr}</span>
+        </span>
+      );
+    }
+
+    // Phone / Contact numbers
+    if (
+      normalizedHeader.includes("phone") ||
+      normalizedHeader.includes("mobile") ||
+      normalizedHeader.includes("contact") ||
+      normalizedHeader.includes("tel")
+    ) {
+      return (
+        <a
+          href={`tel:${valStr}`}
+          onClick={(e) => e.stopPropagation()}
+          className="text-slate-500 hover:text-slate-700 font-semibold truncate max-w-[160px] block"
+          title={valStr}
+        >
+          {valStr}
+        </a>
+      );
+    }
+
     // Default string rendering
     return <span className="truncate max-w-[180px] block text-slate-600 font-medium">{valStr}</span>;
   };
 
+  // Group leads by uploadBatch. Fall back to "unknown" if uploadBatch is not present.
+  const groupedLeads: Record<string, { fileName: string; leads: Lead[] }> = {};
+  leads.forEach((lead) => {
+    const batchId = lead.uploadBatch?.id || "unknown";
+    const fileName = lead.uploadBatch?.fileName || "Manual Entry / Unknown Batch";
+    if (!groupedLeads[batchId]) {
+      groupedLeads[batchId] = {
+        fileName,
+        leads: [],
+      };
+    }
+    groupedLeads[batchId].leads.push(lead);
+  });
+
+  const groups = Object.entries(groupedLeads);
+
   return (
-    <div className="w-full overflow-hidden border border-slate-200 bg-white rounded-3xl shadow-sm text-slate-700">
-      <div className="overflow-x-auto">
-        <table className="w-full text-left border-collapse text-xs">
-          <thead>
-            <tr className="bg-slate-50 border-b border-slate-200 text-slate-500 font-semibold tracking-wider">
-              <th className="px-5 py-4 font-bold text-center w-12">#</th>
-              {dynamicHeaders.length > 0 ? (
-                dynamicHeaders.map((header) => (
-                  <th key={header} className="px-5 py-4 font-bold min-w-[150px]">
-                    {header}
-                  </th>
-                ))
-              ) : (
-                <>
-                  <th className="px-5 py-4 font-bold min-w-[200px]">Name & Company</th>
-                  <th className="px-5 py-4 font-bold min-w-[150px]">Job Title</th>
-                  <th className="px-3 py-4 font-bold text-center w-16">LinkedIn</th>
-                  <th className="px-5 py-4 font-bold min-w-[150px]">Location</th>
-                  <th className="px-5 py-4 font-bold min-w-[150px]">Industry</th>
-                  <th className="px-5 py-4 font-bold min-w-[180px]">Contact Info</th>
-                </>
-              )}
-              <th className="px-5 py-4 font-bold w-28">Status</th>
-              <th className="px-5 py-4 font-bold text-right min-w-[150px]">Actions</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-slate-100 font-medium">
-            {leads.map((lead, idx) => {
-              const gradient = getNameColor(lead.prospectFullName);
-              const initials = getNameInitials(lead.prospectFullName);
-              const isUndoLoading = loadingUndoId === lead.id;
-              const isDeleting = deletingId === lead.id;
-              
-              const statusStyle = getStatusColor(lead.status);
-              const lightStatusClass = getLightStatusStyle(lead.status);
+    <div className="space-y-8 w-full text-slate-700">
+      {groups.map(([batchId, group]) => {
+        // Get all unique keys from rawData across all leads being displayed in this group
+        const getGroupDynamicHeaders = () => {
+          const keysSet = new Set<string>();
+          group.leads.forEach((lead) => {
+            if (lead.rawData) {
+              try {
+                const parsed = JSON.parse(lead.rawData);
+                Object.keys(parsed).forEach((key) => {
+                  if (key.trim()) {
+                    keysSet.add(key.trim());
+                  }
+                });
+              } catch {}
+            }
+          });
+          return Array.from(keysSet);
+        };
 
-              // Check if name is generic (or was parsed from businessName)
-              const hasCompanyAsName = lead.businessName && lead.prospectFullName === lead.businessName;
+        const dynamicHeaders = getGroupDynamicHeaders();
 
-              let parsedRawData: Record<string, string> = {};
-              if (lead.rawData) {
-                try {
-                  parsedRawData = JSON.parse(lead.rawData);
-                } catch {}
-              }
+        return (
+          <div
+            key={batchId}
+            className="w-full bg-white border border-slate-200/80 rounded-3xl p-6 shadow-sm space-y-4 animate-fade-in"
+          >
+            {/* Batch / Group Header */}
+            <div className="flex items-center space-x-3 pb-3 border-b border-slate-100/80">
+              <Layers className="text-[#0D99FF]" size={18} />
+              <h3 className="text-sm font-extrabold text-slate-800 uppercase tracking-wider truncate max-w-md" title={group.fileName}>
+                {group.fileName}
+              </h3>
+              <span className="text-[10px] font-extrabold bg-[#0D99FF]/10 text-[#0D99FF] px-2.5 py-0.5 rounded-full uppercase tracking-wider">
+                {group.leads.length} leads
+              </span>
+            </div>
 
-              return (
-                <tr
-                  key={lead.id}
-                  onClick={() => router.push(`/lead/${lead.id}${filterParams ? `?${filterParams}` : ""}`)}
-                  onMouseEnter={() => lead.remark && setHoveredLead(lead)}
-                  onMouseMove={(e) => setMousePos({ x: e.clientX, y: e.clientY })}
-                  onMouseLeave={() => setHoveredLead(null)}
-                  className="hover:bg-slate-50/70 transition-colors cursor-pointer group"
-                >
-                  {/* Serial Row Number */}
-                  <td className="px-5 py-4 font-mono text-slate-400 text-center">
-                    {lead.rowNum || idx + 1}
-                  </td>
-
-                  {/* Render Cells */}
-                  {dynamicHeaders.length > 0 ? (
-                    dynamicHeaders.map((header) => (
-                      <td key={header} className="px-5 py-4 min-w-[150px]">
-                        {renderCell(header, parsedRawData[header])}
-                      </td>
-                    ))
-                  ) : (
-                    <>
-                      {/* Avatar + Name / Company */}
-                      <td className="px-5 py-4 min-w-[200px]">
-                        <div className="flex items-center space-x-3.5">
-                          <div
-                            className="w-9 h-9 rounded-lg flex items-center justify-center font-extrabold text-white text-[10px] sm:text-xs shadow-sm shrink-0"
-                            style={{
-                              background: `linear-gradient(135deg, ${gradient.from}, ${gradient.to})`,
-                            }}
-                          >
-                            {initials}
-                          </div>
-                          <div className="min-w-0">
-                            <p className="font-bold text-slate-800 text-sm truncate leading-tight group-hover:text-[#0D99FF] transition-colors">
-                              {lead.prospectFullName}
-                            </p>
-                            {lead.businessName && !hasCompanyAsName && (
-                              <p className="text-[10px] text-slate-450 mt-0.5 truncate flex items-center">
-                                <Building size={10} className="mr-1 text-slate-400" />
-                                {lead.businessName}
-                              </p>
-                            )}
-                          </div>
-                        </div>
-                      </td>
-
-                      {/* Job Title */}
-                      <td className="px-5 py-4 text-slate-600 truncate max-w-[180px]">
-                        {lead.prospectJobTitle ? (
-                          <span className="flex items-center">
-                            <Briefcase size={12} className="mr-1.5 text-slate-400 shrink-0" />
-                            <span className="truncate">{lead.prospectJobTitle}</span>
-                          </span>
-                        ) : (
-                          <span className="text-slate-400 italic font-normal">-</span>
-                        )}
-                      </td>
-
-                      {/* LinkedIn */}
-                      <td className="px-3 py-4 text-center">
-                        {lead.prospectLinkedin ? (
-                          <a
-                            href={formatLinkedinUrl(lead.prospectLinkedin)}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            onClick={(e) => e.stopPropagation()}
-                            className="inline-flex p-1.5 rounded-lg bg-[#0A66C2]/10 hover:bg-[#0A66C2] text-[#0A66C2] hover:text-white transition-all"
-                            title="LinkedIn Profile"
-                          >
-                            <LinkedinIcon size={12} className="fill-current" />
-                          </a>
-                        ) : (
-                          <span className="text-slate-300">-</span>
-                        )}
-                      </td>
-
-                      {/* Location */}
-                      <td className="px-5 py-4 text-slate-600 truncate max-w-[150px]">
-                        {(lead.businessCountry || lead.businessRegion) ? (
-                          <span className="flex items-center">
-                            <MapPin size={12} className="mr-1.5 text-slate-400 shrink-0" />
-                            <span className="truncate">
-                              {[lead.businessRegion, lead.businessCountry].filter(Boolean).join(", ")}
-                            </span>
-                          </span>
-                        ) : (
-                          <span className="text-slate-400 italic font-normal">-</span>
-                        )}
-                      </td>
-
-                      {/* Industry */}
-                      <td className="px-5 py-4 text-slate-650 truncate max-w-[150px]" title={lead.businessNaicsDescription || ""}>
-                        {lead.businessNaicsDescription ? (
-                          <span className="flex items-center">
-                            <Layers size={12} className="mr-1.5 text-slate-400 shrink-0" />
-                            <span className="truncate">{lead.businessNaicsDescription}</span>
-                          </span>
-                        ) : (
-                          <span className="text-slate-400 italic font-normal">-</span>
-                        )}
-                      </td>
-
-                      {/* Contact Info */}
-                      <td className="px-5 py-4 text-slate-600 space-y-1">
-                        {(() => {
-                          const emails = cleanContactInfo(lead.contactProfessionalEmail);
-                          return emails.length > 0 ? (
-                            <a
-                              href={`mailto:${emails[0]}`}
-                              onClick={(e) => e.stopPropagation()}
-                              className="block text-[#0D99FF] hover:text-[#0575E6] hover:underline font-semibold truncate max-w-[160px]"
-                              title={emails[0]}
-                            >
-                              {emails[0]}
-                            </a>
-                          ) : (
-                            <span className="text-slate-400 block italic font-normal">-</span>
-                          );
-                        })()}
-                        {(() => {
-                          const phones = cleanContactInfo(lead.contactMobilePhone || lead.contactPhoneNumbers);
-                          return phones.length > 0 ? (
-                            <a
-                              href={`tel:${phones[0]}`}
-                              onClick={(e) => e.stopPropagation()}
-                              className="block text-slate-500 hover:text-slate-700 text-[10px] font-semibold"
-                            >
-                              {phones[0]}
-                            </a>
-                          ) : null;
-                        })()}
-                      </td>
-                    </>
-                  )}
-
-                  {/* Status Badge */}
-                  <td className="px-5 py-4">
-                    <span
-                      className={cn(
-                        "inline-flex items-center space-x-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold border capitalize",
-                        lightStatusClass
+            {/* Table Container */}
+            <div className="w-full overflow-hidden border border-slate-150 bg-white rounded-2xl shadow-sm text-slate-700">
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse text-xs">
+                  <thead>
+                    <tr className="bg-slate-50 border-b border-slate-200 text-slate-500 font-semibold tracking-wider">
+                      <th className="px-5 py-4 font-bold text-center w-12">#</th>
+                      {dynamicHeaders.length > 0 ? (
+                        dynamicHeaders.map((header) => (
+                          <th key={header} className="px-5 py-4 font-bold min-w-[150px]">
+                            {header}
+                          </th>
+                        ))
+                      ) : (
+                        <>
+                          <th className="px-5 py-4 font-bold min-w-[200px]">Name & Company</th>
+                          <th className="px-5 py-4 font-bold min-w-[150px]">Job Title</th>
+                          <th className="px-3 py-4 font-bold text-center w-16">LinkedIn</th>
+                          <th className="px-5 py-4 font-bold min-w-[150px]">Location</th>
+                          <th className="px-5 py-4 font-bold min-w-[150px]">Industry</th>
+                          <th className="px-5 py-4 font-bold min-w-[180px]">Contact Info</th>
+                        </>
                       )}
-                    >
-                      <span className={cn("w-1.5 h-1.5 rounded-full", statusStyle.dot)} />
-                      <span>{lead.status}</span>
-                    </span>
-                  </td>
+                      <th className="px-5 py-4 font-bold w-28">Status</th>
+                      <th className="px-5 py-4 font-bold text-right min-w-[150px]">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 font-medium">
+                    {group.leads.map((lead, idx) => {
+                      const gradient = getNameColor(lead.prospectFullName);
+                      const initials = getNameInitials(lead.prospectFullName);
+                      const isUndoLoading = loadingUndoId === lead.id;
+                      const isDeleting = deletingId === lead.id;
+                      
+                      const statusStyle = getStatusColor(lead.status);
+                      const lightStatusClass = getLightStatusStyle(lead.status);
 
-                  {/* Actions (View Profile + Undo + Delete) */}
-                  <td className="px-5 py-4 text-right">
-                    <div className="flex items-center justify-end space-x-2">
-                      {/* Undo Button (Only shown if status is not new) */}
-                      {lead.status !== "new" && (
-                        <button
-                          onClick={(e) => handleUndo(e, lead.id, lead.prospectFullName)}
-                          disabled={isUndoLoading || isDeleting}
-                          className="p-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-100 hover:border-slate-300 text-slate-500 hover:text-slate-800 transition-all shadow-sm disabled:opacity-50"
-                          title="Undo / Reset Status"
+                      // Check if name is generic (or was parsed from businessName)
+                      const hasCompanyAsName = lead.businessName && lead.prospectFullName === lead.businessName;
+
+                      let parsedRawData: Record<string, string> = {};
+                      if (lead.rawData) {
+                        try {
+                          parsedRawData = JSON.parse(lead.rawData);
+                        } catch {}
+                      }
+
+                      return (
+                        <tr
+                          key={lead.id}
+                          onClick={() => router.push(`/lead/${lead.id}${filterParams ? `?${filterParams}` : ""}`)}
+                          onMouseEnter={() => lead.remark && setHoveredLead(lead)}
+                          onMouseMove={(e) => setMousePos({ x: e.clientX, y: e.clientY })}
+                          onMouseLeave={() => setHoveredLead(null)}
+                          className="hover:bg-slate-50/70 transition-colors cursor-pointer group"
                         >
-                          {isUndoLoading ? (
-                            <Loader2 className="animate-spin text-slate-500" size={13} />
+                          {/* Serial Row Number */}
+                          <td className="px-5 py-4 font-mono text-slate-400 text-center">
+                            {lead.rowNum || idx + 1}
+                          </td>
+
+                          {/* Render Cells */}
+                          {dynamicHeaders.length > 0 ? (
+                            dynamicHeaders.map((header) => (
+                              <td key={header} className="px-5 py-4 min-w-[150px]">
+                                {renderCell(header, parsedRawData[header])}
+                              </td>
+                            ))
                           ) : (
-                            <RotateCcw size={13} />
+                            <>
+                              {/* Avatar + Name / Company */}
+                              <td className="px-5 py-4 min-w-[200px]">
+                                <div className="flex items-center space-x-3.5">
+                                  <div
+                                    className="w-9 h-9 rounded-lg flex items-center justify-center font-extrabold text-white text-[10px] sm:text-xs shadow-sm shrink-0"
+                                    style={{
+                                      backgroundColor: gradient.from,
+                                    }}
+                                  >
+                                    {initials}
+                                  </div>
+                                  <div className="min-w-0">
+                                    <p className="font-bold text-slate-800 text-sm truncate leading-tight group-hover:text-[#0D99FF] transition-colors">
+                                      {lead.prospectFullName}
+                                    </p>
+                                    {lead.businessName && !hasCompanyAsName && (
+                                      <p className="text-[10px] text-slate-450 mt-0.5 truncate flex items-center">
+                                        <Building size={10} className="mr-1 text-slate-400" />
+                                        {lead.businessName}
+                                      </p>
+                                    )}
+                                  </div>
+                                </div>
+                              </td>
+
+                              {/* Job Title */}
+                              <td className="px-5 py-4 text-slate-600 truncate max-w-[180px]">
+                                {lead.prospectJobTitle ? (
+                                  <span className="flex items-center">
+                                    <Briefcase size={12} className="mr-1.5 text-slate-400 shrink-0" />
+                                    <span className="truncate">{lead.prospectJobTitle}</span>
+                                  </span>
+                                ) : (
+                                  <span className="text-slate-400 italic font-normal">-</span>
+                                )}
+                              </td>
+
+                              {/* LinkedIn */}
+                              <td className="px-3 py-4 text-center">
+                                {lead.prospectLinkedin ? (
+                                  <a
+                                    href={formatLinkedinUrl(lead.prospectLinkedin)}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    onClick={(e) => e.stopPropagation()}
+                                    className="inline-flex p-1.5 rounded-lg bg-[#0A66C2]/10 hover:bg-[#0A66C2] text-[#0A66C2] hover:text-white transition-all"
+                                    title="LinkedIn Profile"
+                                  >
+                                    <LinkedinIcon size={12} className="fill-current" />
+                                  </a>
+                                ) : (
+                                  <span className="text-slate-300">-</span>
+                                )}
+                              </td>
+
+                              {/* Location */}
+                              <td className="px-5 py-4 text-slate-600 truncate max-w-[150px]">
+                                {(lead.businessCountry || lead.businessRegion) ? (
+                                  <span className="flex items-center">
+                                    <MapPin size={12} className="mr-1.5 text-slate-400 shrink-0" />
+                                    <span className="truncate">
+                                      {[lead.businessRegion, lead.businessCountry].filter(Boolean).join(", ")}
+                                    </span>
+                                  </span>
+                                ) : (
+                                  <span className="text-slate-400 italic font-normal">-</span>
+                                )}
+                              </td>
+
+                              {/* Industry */}
+                              <td className="px-5 py-4 text-slate-650 truncate max-w-[150px]" title={lead.businessNaicsDescription || ""}>
+                                {lead.businessNaicsDescription ? (
+                                  <span className="flex items-center">
+                                    <Layers size={12} className="mr-1.5 text-slate-400 shrink-0" />
+                                    <span className="truncate">{lead.businessNaicsDescription}</span>
+                                  </span>
+                                ) : (
+                                  <span className="text-slate-400 italic font-normal">-</span>
+                                )}
+                              </td>
+
+                              {/* Contact Info */}
+                              <td className="px-5 py-4 text-slate-600 space-y-1">
+                                {(() => {
+                                  const emails = cleanContactInfo(lead.contactProfessionalEmail);
+                                  return emails.length > 0 ? (
+                                    <a
+                                      href={`mailto:${emails[0]}`}
+                                      onClick={(e) => e.stopPropagation()}
+                                      className="block text-[#0D99FF] hover:text-[#0575E6] hover:underline font-semibold truncate max-w-[160px]"
+                                      title={emails[0]}
+                                    >
+                                      {emails[0]}
+                                    </a>
+                                  ) : (
+                                    <span className="text-slate-400 block italic font-normal">-</span>
+                                  );
+                                })()}
+                                {(() => {
+                                  const phones = cleanContactInfo(lead.contactMobilePhone || lead.contactPhoneNumbers);
+                                  return phones.length > 0 ? (
+                                    <a
+                                      href={`tel:${phones[0]}`}
+                                      onClick={(e) => e.stopPropagation()}
+                                      className="block text-slate-500 hover:text-slate-700 text-[10px] font-semibold"
+                                    >
+                                      {phones[0]}
+                                    </a>
+                                  ) : null;
+                                })()}
+                              </td>
+                            </>
                           )}
-                        </button>
-                      )}
 
-                      {/* Delete Lead Button */}
-                      <button
-                        onClick={(e) => handleDelete(e, lead.id, lead.prospectFullName)}
-                        disabled={isDeleting || isUndoLoading}
-                        className="p-2 rounded-xl border border-slate-200 bg-white hover:bg-red-50 hover:border-red-200 hover:text-red-500 text-slate-400 transition-all shadow-sm disabled:opacity-50"
-                        title="Delete Lead Completely"
-                      >
-                        {isDeleting ? (
-                          <Loader2 className="animate-spin text-red-500" size={13} />
-                        ) : (
-                          <Trash2 size={13} />
-                        )}
-                      </button>
+                          {/* Status Badge */}
+                          <td className="px-5 py-4">
+                            <span
+                              className={cn(
+                                "inline-flex items-center space-x-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold border capitalize",
+                                lightStatusClass
+                              )}
+                            >
+                              <span className={cn("w-1.5 h-1.5 rounded-full", statusStyle.dot)} />
+                              <span>{lead.status}</span>
+                            </span>
+                          </td>
 
-                      {/* View Profile Shortcut */}
-                      <div className="p-2 rounded-xl bg-slate-50 border border-slate-200/80 text-slate-450 group-hover:bg-[#0D99FF] group-hover:border-[#0D99FF] group-hover:text-white transition-all shadow-sm">
-                        <ArrowRight size={13} />
-                      </div>
-                    </div>
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
+                          {/* Actions */}
+                          <td className="px-5 py-4 text-right">
+                            <div className="flex items-center justify-end space-x-2">
+                              {/* Undo Button */}
+                              {lead.status !== "new" && (
+                                <button
+                                  onClick={(e) => handleUndo(e, lead.id, lead.prospectFullName)}
+                                  disabled={isUndoLoading || isDeleting}
+                                  className="p-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-100 hover:border-slate-300 text-slate-500 hover:text-slate-800 transition-all shadow-sm disabled:opacity-50"
+                                  title="Undo / Reset Status"
+                                >
+                                  {isUndoLoading ? (
+                                    <Loader2 className="animate-spin text-slate-500" size={13} />
+                                  ) : (
+                                    <RotateCcw size={13} />
+                                  )}
+                                </button>
+                              )}
+
+                              {/* Delete Lead Button */}
+                              <button
+                                onClick={(e) => handleDelete(e, lead.id, lead.prospectFullName)}
+                                disabled={isDeleting || isUndoLoading}
+                                className="p-2 rounded-xl border border-slate-200 bg-white hover:bg-red-50 hover:border-red-200 hover:text-red-500 text-slate-400 transition-all shadow-sm disabled:opacity-50"
+                                title="Delete Lead Completely"
+                              >
+                                {isDeleting ? (
+                                  <Loader2 className="animate-spin text-red-500" size={13} />
+                                ) : (
+                                  <Trash2 size={13} />
+                                )}
+                              </button>
+
+                              {/* View Profile Shortcut */}
+                              <div className="p-2 rounded-xl bg-slate-50 border border-slate-200/80 text-slate-450 group-hover:bg-[#0D99FF] group-hover:border-[#0D99FF] group-hover:text-white transition-all shadow-sm">
+                                <ArrowRight size={13} />
+                              </div>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        );
+      })}
 
       {/* Floating Remark Tooltip */}
       {hoveredLead && hoveredLead.remark && (
         <div
-          className="fixed z-50 bg-[#121A2E] text-white p-4 rounded-2xl border border-slate-700/60 shadow-2xl max-w-xs pointer-events-none text-xs flex flex-col space-y-1.5 transition-all duration-75 animate-fade-in"
+          className="fixed z-50 bg-white/98 backdrop-blur-md text-slate-800 p-4 rounded-2xl border-2 border-amber-500/30 shadow-[0_12px_36px_rgba(245,158,11,0.12)] max-w-xs pointer-events-none text-xs flex flex-col space-y-1.5 transition-all duration-75 animate-fade-in"
           style={{
             left: `${mousePos.x + 15}px`,
             top: `${mousePos.y + 15}px`,
           }}
         >
-          <div className="font-extrabold text-[#0D99FF] uppercase tracking-wider text-[9px]">
-            Remark for {hoveredLead.prospectFullName}
+          <div className="font-extrabold text-amber-600 uppercase tracking-widest text-[9px] flex items-center space-x-1.5">
+            <MessageSquare size={10} className="text-amber-500 shrink-0" />
+            <span>Remark for {hoveredLead.prospectFullName}</span>
           </div>
-          <div className="text-slate-300 leading-relaxed font-medium italic">
+          <div className="text-slate-700 leading-relaxed font-semibold italic text-[11px] sm:text-xs">
             "{hoveredLead.remark}"
           </div>
-          <div className="text-[9px] text-slate-500 font-semibold mt-1">
+          <div className="text-[9px] text-slate-400 font-semibold mt-1.5 pt-1.5 border-t border-slate-100">
             Last updated: {formatDate(hoveredLead.updatedAt)}
           </div>
         </div>

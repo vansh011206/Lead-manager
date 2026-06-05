@@ -205,7 +205,7 @@ export default function CSVUploader({ onUploadSuccess }: CSVUploaderProps) {
   };
 
   return (
-    <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-[0_4px_24px_rgba(15,23,42,0.03)] space-y-6 text-slate-700">
+    <div className="bg-white border border-slate-200/80 rounded-3xl p-6 shadow-sm space-y-6 text-slate-700">
       <div>
         <h2 className="text-lg font-bold text-slate-800 font-sans">Import Leads Spreadsheets</h2>
         <p className="text-xs text-slate-500 mt-1 font-medium">

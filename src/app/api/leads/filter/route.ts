@@ -28,7 +28,7 @@ export async function GET(request: Request) {
     if (industry && industry !== "all") {
       where.businessNaicsDescription = industry;
     }
-    if (batchId && batchId !== "all") {
+    if (batchId && batchId !== "all" && batchId !== "undefined" && batchId !== "null") {
       where.uploadBatchId = batchId;
     }
 
