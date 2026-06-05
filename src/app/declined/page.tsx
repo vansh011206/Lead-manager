@@ -97,7 +97,7 @@ function DeclinedLeadsPageContent() {
   const filterParamsString = finalParams.toString();
 
   return (
-    <div className="p-6 sm:p-8 w-full space-y-8 animate-fade-in text-slate-600">
+    <div className="p-4 sm:p-8 w-full space-y-8 animate-fade-in text-slate-600">
       {/* Title */}
       <div>
         <h1 className="text-2xl sm:text-4xl font-extrabold tracking-tight text-slate-800 flex items-center">

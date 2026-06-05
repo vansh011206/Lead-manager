@@ -33,6 +33,7 @@ model Lead {
   createdAt                  DateTime     @default(now())
   updatedAt                  DateTime     @updatedAt
   originalCreatedAt          String?
+  rawData                    String?
 }
 
 model UploadBatch {

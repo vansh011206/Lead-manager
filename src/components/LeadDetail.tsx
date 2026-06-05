@@ -17,12 +17,16 @@ import {
   XCircle,
   ChevronRight,
   Phone,
+  Trash2,
+  Loader2,
 } from "lucide-react";
 import { getStatusColor, getNameColor } from "@/lib/nameToColor";
 import { formatDate, cleanContactInfo, getFirstPhone } from "@/lib/utils";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import RemarkModal from "@/components/RemarkModal";
+import { toast } from "sonner";
 
 const LinkedinIcon = ({ className, size = 16 }: { className?: string; size?: number }) => (
   <svg
@@ -46,7 +50,9 @@ interface LeadDetailProps {
 }
 
 export default function LeadDetail({ lead, backUrl, onAction, isLoading, hasNext }: LeadDetailProps) {
+  const router = useRouter();
   const [isRemarkOpen, setRemarkOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const statusStyle = getStatusColor(lead.status);
   const nameGradient = getNameColor(lead.prospectFullName);
 
@@ -80,6 +86,30 @@ export default function LeadDetail({ lead, backUrl, onAction, isLoading, hasNext
     await onAction(status, remark);
   };
 
+  const handleDelete = async () => {
+    const confirmed = window.confirm(`Are you sure you want to delete lead "${lead.prospectFullName}" completely?`);
+    if (!confirmed) return;
+
+    try {
+      setIsDeleting(true);
+      const res = await fetch(`/api/leads/${lead.id}`, {
+        method: "DELETE",
+      });
+
+      if (!res.ok) {
+        throw new Error("Failed to delete lead");
+      }
+
+      toast.success(`Deleted lead: ${lead.prospectFullName}`);
+      router.push(backUrl);
+    } catch (err: any) {
+      console.error("Delete lead error:", err);
+      toast.error(err.message || "Failed to delete lead");
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
   return (
     <div className="space-y-6 text-slate-700 pb-28">
       {/* Breadcrumbs & Back Button */}
@@ -96,13 +126,28 @@ export default function LeadDetail({ lead, backUrl, onAction, isLoading, hasNext
           <span className="text-[#0D99FF] font-extrabold">{lead.prospectFullName}</span>
         </div>
 
-        <Link
-          href={backUrl}
-          className="flex items-center space-x-1.5 self-start text-xs font-bold px-4 py-2.5 bg-white hover:bg-slate-50 border border-slate-200/80 shadow-sm rounded-xl text-slate-600 hover:text-slate-800 transition-all"
-        >
-          <ArrowLeft size={14} />
-          <span>Back to List</span>
-        </Link>
+        <div className="flex items-center space-x-2">
+          <button
+            onClick={handleDelete}
+            disabled={isLoading || isDeleting}
+            className="flex items-center space-x-1.5 text-xs font-bold px-4 py-2.5 bg-white hover:bg-red-50 hover:border-red-300 border border-slate-200/80 shadow-sm rounded-xl text-red-500 hover:text-red-700 transition-all"
+          >
+            {isDeleting ? (
+              <Loader2 className="animate-spin text-red-500" size={14} />
+            ) : (
+              <Trash2 size={14} />
+            )}
+            <span>Delete Lead</span>
+          </button>
+
+          <Link
+            href={backUrl}
+            className="flex items-center space-x-1.5 self-start text-xs font-bold px-4 py-2.5 bg-white hover:bg-slate-50 border border-slate-200/80 shadow-sm rounded-xl text-slate-600 hover:text-slate-800 transition-all"
+          >
+            <ArrowLeft size={14} />
+            <span>Back to List</span>
+          </Link>
+        </div>
       </div>
 
       {/* Profile Header Block */}
@@ -419,6 +464,35 @@ export default function LeadDetail({ lead, backUrl, onAction, isLoading, hasNext
             </div>
           </div>
         </div>
+
+        {/* Section: Original Spreadsheet Fields (Dynamic) */}
+        {(lead as any).rawData && (
+          <div className="col-span-1 md:col-span-2 bg-white border border-slate-200/80 rounded-3xl p-8 sm:p-10 shadow-sm">
+            <h3 className="text-sm font-bold text-slate-800 border-b border-slate-100 pb-3 flex items-center uppercase tracking-wider">
+              <Layers className="mr-2.5 text-[#0D99FF]" size={16} />
+              <span>Original Spreadsheet Fields</span>
+            </h3>
+            <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+              {(() => {
+                try {
+                  const parsed = JSON.parse((lead as any).rawData);
+                  return Object.entries(parsed).map(([key, val]) => (
+                    <div key={key} className="border-b border-slate-50 pb-2">
+                      <label className="text-xs font-bold text-slate-400 uppercase tracking-wider block">
+                        {key}
+                      </label>
+                      <span className="text-sm text-slate-750 font-semibold mt-1 block truncate" title={String(val || "")}>
+                        {val ? String(val) : <span className="text-slate-350 italic font-normal">-</span>}
+                      </span>
+                    </div>
+                  ));
+                } catch {
+                  return <p className="text-sm text-slate-400 italic">Error parsing original sheet fields</p>;
+                }
+              })()}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Floating Action Dock Panel */}

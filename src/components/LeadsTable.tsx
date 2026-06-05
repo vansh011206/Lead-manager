@@ -1,9 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { MapPin, Briefcase, Building, MessageSquare, Layers, ArrowRight, RotateCcw, Loader2 } from "lucide-react";
+import { MapPin, Briefcase, Building, MessageSquare, Layers, ArrowRight, RotateCcw, Loader2, Trash2 } from "lucide-react";
 import { getNameColor, getNameInitials, getStatusColor } from "@/lib/nameToColor";
 import { cn, formatDate, cleanContactInfo } from "@/lib/utils";
 import { toast } from "sonner";
@@ -42,6 +41,7 @@ interface Lead {
   remark: string | null;
   createdAt: string;
   updatedAt: string;
+  rawData?: string | null;
 }
 
 interface LeadsTableProps {
@@ -53,6 +53,9 @@ interface LeadsTableProps {
 export default function LeadsTable({ leads, filterParams = "", onRefresh }: LeadsTableProps) {
   const router = useRouter();
   const [loadingUndoId, setLoadingUndoId] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [hoveredLead, setHoveredLead] = useState<Lead | null>(null);
+  const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
 
   // Custom Status Pill Color Overrides for Light Theme
   const getLightStatusStyle = (status: string) => {
@@ -102,6 +105,138 @@ export default function LeadsTable({ leads, filterParams = "", onRefresh }: Lead
     }
   };
 
+  const handleDelete = async (e: React.MouseEvent, leadId: string, name: string) => {
+    e.stopPropagation();
+    const confirmed = window.confirm(`Are you sure you want to delete lead "${name}" completely?`);
+    if (!confirmed) return;
+
+    try {
+      setDeletingId(leadId);
+      const res = await fetch(`/api/leads/${leadId}`, {
+        method: "DELETE",
+      });
+
+      if (!res.ok) {
+        throw new Error("Failed to delete lead");
+      }
+
+      toast.success(`Deleted lead: ${name}`);
+      onRefresh();
+    } catch (err: any) {
+      console.error("Delete lead error:", err);
+      toast.error(err.message || "Failed to delete lead");
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
+  // Get all unique keys from rawData across all leads being displayed
+  const getDynamicHeaders = () => {
+    const keysSet = new Set<string>();
+    leads.forEach((lead) => {
+      if (lead.rawData) {
+        try {
+          const parsed = JSON.parse(lead.rawData);
+          Object.keys(parsed).forEach((key) => {
+            if (key.trim()) {
+              keysSet.add(key.trim());
+            }
+          });
+        } catch {}
+      }
+    });
+    return Array.from(keysSet);
+  };
+
+  const dynamicHeaders = getDynamicHeaders();
+
+  // Smart Cell Renderer
+  const renderCell = (headerName: string, value: any) => {
+    if (value === undefined || value === null || String(value).trim() === "") {
+      return <span className="text-slate-400 italic font-normal">-</span>;
+    }
+
+    const valStr = String(value).trim();
+    const normalizedHeader = headerName.toLowerCase().replace(/[^a-z0-9]/g, "");
+
+    // LinkedIn Profile
+    if (normalizedHeader.includes("linkedin") || valStr.includes("linkedin.com/")) {
+      return (
+        <a
+          href={formatLinkedinUrl(valStr)}
+          target="_blank"
+          rel="noopener noreferrer"
+          onClick={(e) => e.stopPropagation()}
+          className="inline-flex p-1.5 rounded-lg bg-[#0A66C2]/10 hover:bg-[#0A66C2] text-[#0A66C2] hover:text-white transition-all"
+          title="LinkedIn Profile"
+        >
+          <LinkedinIcon size={12} className="fill-current" />
+        </a>
+      );
+    }
+
+    // Email link
+    if (normalizedHeader.includes("email") || valStr.includes("@")) {
+      return (
+        <a
+          href={`mailto:${valStr}`}
+          onClick={(e) => e.stopPropagation()}
+          className="text-[#0D99FF] hover:text-[#0575E6] hover:underline font-semibold truncate max-w-[160px] block"
+          title={valStr}
+        >
+          {valStr}
+        </a>
+      );
+    }
+
+    // Website link
+    if (
+      normalizedHeader.includes("website") ||
+      valStr.startsWith("http://") ||
+      valStr.startsWith("https://") ||
+      (valStr.includes(".") && !valStr.includes(" ") && normalizedHeader.includes("url"))
+    ) {
+      const url = valStr.startsWith("http") ? valStr : `https://${valStr}`;
+      return (
+        <a
+          href={url}
+          target="_blank"
+          rel="noopener noreferrer"
+          onClick={(e) => e.stopPropagation()}
+          className="text-[#0D99FF] hover:text-[#0575E6] hover:underline font-semibold truncate max-w-[160px] block"
+          title={valStr}
+        >
+          {valStr}
+        </a>
+      );
+    }
+
+    // Name column with avatar initials
+    const nameKeywords = ["name", "fullname", "prospectfullname", "contactname", "leadname", "personname", "clientname", "customername"];
+    if (nameKeywords.includes(normalizedHeader)) {
+      const gradient = getNameColor(valStr);
+      const initials = getNameInitials(valStr);
+      return (
+        <div className="flex items-center space-x-3">
+          <div
+            className="w-8 h-8 rounded-lg flex items-center justify-center font-extrabold text-white text-[10px] sm:text-xs shadow-sm shrink-0"
+            style={{
+              background: `linear-gradient(135deg, ${gradient.from}, ${gradient.to})`,
+            }}
+          >
+            {initials}
+          </div>
+          <span className="font-bold text-slate-800 text-sm truncate max-w-[180px] leading-tight group-hover:text-[#0D99FF] transition-colors">
+            {valStr}
+          </span>
+        </div>
+      );
+    }
+
+    // Default string rendering
+    return <span className="truncate max-w-[180px] block text-slate-600 font-medium">{valStr}</span>;
+  };
+
   return (
     <div className="w-full overflow-hidden border border-slate-200 bg-white rounded-3xl shadow-sm text-slate-700">
       <div className="overflow-x-auto">
@@ -109,14 +244,24 @@ export default function LeadsTable({ leads, filterParams = "", onRefresh }: Lead
           <thead>
             <tr className="bg-slate-50 border-b border-slate-200 text-slate-500 font-semibold tracking-wider">
               <th className="px-5 py-4 font-bold text-center w-12">#</th>
-              <th className="px-5 py-4 font-bold min-w-[200px]">Name & Company</th>
-              <th className="px-5 py-4 font-bold min-w-[150px]">Job Title</th>
-              <th className="px-3 py-4 font-bold text-center w-16">LinkedIn</th>
-              <th className="px-5 py-4 font-bold min-w-[150px]">Location</th>
-              <th className="px-5 py-4 font-bold min-w-[150px]">Industry</th>
-              <th className="px-5 py-4 font-bold min-w-[180px]">Contact Info</th>
+              {dynamicHeaders.length > 0 ? (
+                dynamicHeaders.map((header) => (
+                  <th key={header} className="px-5 py-4 font-bold min-w-[150px]">
+                    {header}
+                  </th>
+                ))
+              ) : (
+                <>
+                  <th className="px-5 py-4 font-bold min-w-[200px]">Name & Company</th>
+                  <th className="px-5 py-4 font-bold min-w-[150px]">Job Title</th>
+                  <th className="px-3 py-4 font-bold text-center w-16">LinkedIn</th>
+                  <th className="px-5 py-4 font-bold min-w-[150px]">Location</th>
+                  <th className="px-5 py-4 font-bold min-w-[150px]">Industry</th>
+                  <th className="px-5 py-4 font-bold min-w-[180px]">Contact Info</th>
+                </>
+              )}
               <th className="px-5 py-4 font-bold w-28">Status</th>
-              <th className="px-5 py-4 font-bold text-right min-w-[120px]">Actions</th>
+              <th className="px-5 py-4 font-bold text-right min-w-[150px]">Actions</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100 font-medium">
@@ -124,6 +269,7 @@ export default function LeadsTable({ leads, filterParams = "", onRefresh }: Lead
               const gradient = getNameColor(lead.prospectFullName);
               const initials = getNameInitials(lead.prospectFullName);
               const isUndoLoading = loadingUndoId === lead.id;
+              const isDeleting = deletingId === lead.id;
               
               const statusStyle = getStatusColor(lead.status);
               const lightStatusClass = getLightStatusStyle(lead.status);
@@ -131,10 +277,20 @@ export default function LeadsTable({ leads, filterParams = "", onRefresh }: Lead
               // Check if name is generic (or was parsed from businessName)
               const hasCompanyAsName = lead.businessName && lead.prospectFullName === lead.businessName;
 
+              let parsedRawData: Record<string, string> = {};
+              if (lead.rawData) {
+                try {
+                  parsedRawData = JSON.parse(lead.rawData);
+                } catch {}
+              }
+
               return (
                 <tr
                   key={lead.id}
                   onClick={() => router.push(`/lead/${lead.id}${filterParams ? `?${filterParams}` : ""}`)}
+                  onMouseEnter={() => lead.remark && setHoveredLead(lead)}
+                  onMouseMove={(e) => setMousePos({ x: e.clientX, y: e.clientY })}
+                  onMouseLeave={() => setHoveredLead(null)}
                   className="hover:bg-slate-50/70 transition-colors cursor-pointer group"
                 >
                   {/* Serial Row Number */}
@@ -142,117 +298,128 @@ export default function LeadsTable({ leads, filterParams = "", onRefresh }: Lead
                     {lead.rowNum || idx + 1}
                   </td>
 
-                  {/* Avatar + Name / Company */}
-                  <td className="px-5 py-4 min-w-[200px]">
-                    <div className="flex items-center space-x-3.5">
-                      <div
-                        className="w-9 h-9 rounded-lg flex items-center justify-center font-extrabold text-white text-[10px] sm:text-xs shadow-sm shrink-0"
-                        style={{
-                          background: `linear-gradient(135deg, ${gradient.from}, ${gradient.to})`,
-                        }}
-                      >
-                        {initials}
-                      </div>
-                      <div className="min-w-0">
-                        <p className="font-bold text-slate-800 text-sm truncate leading-tight group-hover:text-[#0D99FF] transition-colors">
-                          {lead.prospectFullName}
-                        </p>
-                        {lead.businessName && !hasCompanyAsName && (
-                          <p className="text-[10px] text-slate-450 mt-0.5 truncate flex items-center">
-                            <Building size={10} className="mr-1 text-slate-400" />
-                            {lead.businessName}
-                          </p>
+                  {/* Render Cells */}
+                  {dynamicHeaders.length > 0 ? (
+                    dynamicHeaders.map((header) => (
+                      <td key={header} className="px-5 py-4 min-w-[150px]">
+                        {renderCell(header, parsedRawData[header])}
+                      </td>
+                    ))
+                  ) : (
+                    <>
+                      {/* Avatar + Name / Company */}
+                      <td className="px-5 py-4 min-w-[200px]">
+                        <div className="flex items-center space-x-3.5">
+                          <div
+                            className="w-9 h-9 rounded-lg flex items-center justify-center font-extrabold text-white text-[10px] sm:text-xs shadow-sm shrink-0"
+                            style={{
+                              background: `linear-gradient(135deg, ${gradient.from}, ${gradient.to})`,
+                            }}
+                          >
+                            {initials}
+                          </div>
+                          <div className="min-w-0">
+                            <p className="font-bold text-slate-800 text-sm truncate leading-tight group-hover:text-[#0D99FF] transition-colors">
+                              {lead.prospectFullName}
+                            </p>
+                            {lead.businessName && !hasCompanyAsName && (
+                              <p className="text-[10px] text-slate-450 mt-0.5 truncate flex items-center">
+                                <Building size={10} className="mr-1 text-slate-400" />
+                                {lead.businessName}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      </td>
+
+                      {/* Job Title */}
+                      <td className="px-5 py-4 text-slate-600 truncate max-w-[180px]">
+                        {lead.prospectJobTitle ? (
+                          <span className="flex items-center">
+                            <Briefcase size={12} className="mr-1.5 text-slate-400 shrink-0" />
+                            <span className="truncate">{lead.prospectJobTitle}</span>
+                          </span>
+                        ) : (
+                          <span className="text-slate-400 italic font-normal">-</span>
                         )}
-                      </div>
-                    </div>
-                  </td>
+                      </td>
 
-                  {/* Job Title */}
-                  <td className="px-5 py-4 text-slate-600 truncate max-w-[180px]">
-                    {lead.prospectJobTitle ? (
-                      <span className="flex items-center">
-                        <Briefcase size={12} className="mr-1.5 text-slate-400 shrink-0" />
-                        <span className="truncate">{lead.prospectJobTitle}</span>
-                      </span>
-                    ) : (
-                      <span className="text-slate-400 italic font-normal">N/A</span>
-                    )}
-                  </td>
+                      {/* LinkedIn */}
+                      <td className="px-3 py-4 text-center">
+                        {lead.prospectLinkedin ? (
+                          <a
+                            href={formatLinkedinUrl(lead.prospectLinkedin)}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            onClick={(e) => e.stopPropagation()}
+                            className="inline-flex p-1.5 rounded-lg bg-[#0A66C2]/10 hover:bg-[#0A66C2] text-[#0A66C2] hover:text-white transition-all"
+                            title="LinkedIn Profile"
+                          >
+                            <LinkedinIcon size={12} className="fill-current" />
+                          </a>
+                        ) : (
+                          <span className="text-slate-300">-</span>
+                        )}
+                      </td>
 
-                  {/* LinkedIn */}
-                  <td className="px-3 py-4 text-center">
-                    {lead.prospectLinkedin ? (
-                      <a
-                        href={formatLinkedinUrl(lead.prospectLinkedin)}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        onClick={(e) => e.stopPropagation()}
-                        className="inline-flex p-1.5 rounded-lg bg-[#0A66C2]/10 hover:bg-[#0A66C2] text-[#0A66C2] hover:text-white transition-all"
-                        title="LinkedIn Profile"
-                      >
-                        <LinkedinIcon size={12} className="fill-current" />
-                      </a>
-                    ) : (
-                      <span className="text-slate-300">-</span>
-                    )}
-                  </td>
+                      {/* Location */}
+                      <td className="px-5 py-4 text-slate-600 truncate max-w-[150px]">
+                        {(lead.businessCountry || lead.businessRegion) ? (
+                          <span className="flex items-center">
+                            <MapPin size={12} className="mr-1.5 text-slate-400 shrink-0" />
+                            <span className="truncate">
+                              {[lead.businessRegion, lead.businessCountry].filter(Boolean).join(", ")}
+                            </span>
+                          </span>
+                        ) : (
+                          <span className="text-slate-400 italic font-normal">-</span>
+                        )}
+                      </td>
 
-                  {/* Location */}
-                  <td className="px-5 py-4 text-slate-600 truncate max-w-[150px]">
-                    {(lead.businessCountry || lead.businessRegion) ? (
-                      <span className="flex items-center">
-                        <MapPin size={12} className="mr-1.5 text-slate-400 shrink-0" />
-                        <span className="truncate">
-                          {[lead.businessRegion, lead.businessCountry].filter(Boolean).join(", ")}
-                        </span>
-                      </span>
-                    ) : (
-                      <span className="text-slate-400 italic font-normal">N/A</span>
-                    )}
-                  </td>
+                      {/* Industry */}
+                      <td className="px-5 py-4 text-slate-650 truncate max-w-[150px]" title={lead.businessNaicsDescription || ""}>
+                        {lead.businessNaicsDescription ? (
+                          <span className="flex items-center">
+                            <Layers size={12} className="mr-1.5 text-slate-400 shrink-0" />
+                            <span className="truncate">{lead.businessNaicsDescription}</span>
+                          </span>
+                        ) : (
+                          <span className="text-slate-400 italic font-normal">-</span>
+                        )}
+                      </td>
 
-                  {/* Industry */}
-                  <td className="px-5 py-4 text-slate-650 truncate max-w-[150px]" title={lead.businessNaicsDescription || ""}>
-                    {lead.businessNaicsDescription ? (
-                      <span className="flex items-center">
-                        <Layers size={12} className="mr-1.5 text-slate-400 shrink-0" />
-                        <span className="truncate">{lead.businessNaicsDescription}</span>
-                      </span>
-                    ) : (
-                      <span className="text-slate-400 italic font-normal">N/A</span>
-                    )}
-                  </td>
-
-                  {/* Contact Info */}
-                  <td className="px-5 py-4 text-slate-600 space-y-1">
-                    {(() => {
-                      const emails = cleanContactInfo(lead.contactProfessionalEmail);
-                      return emails.length > 0 ? (
-                        <a
-                          href={`mailto:${emails[0]}`}
-                          onClick={(e) => e.stopPropagation()}
-                          className="block text-[#0D99FF] hover:text-[#0575E6] hover:underline font-semibold truncate max-w-[160px]"
-                          title={emails[0]}
-                        >
-                          {emails[0]}
-                        </a>
-                      ) : (
-                        <span className="text-slate-400 block italic font-normal">No email</span>
-                      );
-                    })()}
-                    {(() => {
-                      const phones = cleanContactInfo(lead.contactMobilePhone || lead.contactPhoneNumbers);
-                      return phones.length > 0 ? (
-                        <a
-                          href={`tel:${phones[0]}`}
-                          onClick={(e) => e.stopPropagation()}
-                          className="block text-slate-500 hover:text-slate-700 text-[10px] font-semibold"
-                        >
-                          {phones[0]}
-                        </a>
-                      ) : null;
-                    })()}
-                  </td>
+                      {/* Contact Info */}
+                      <td className="px-5 py-4 text-slate-600 space-y-1">
+                        {(() => {
+                          const emails = cleanContactInfo(lead.contactProfessionalEmail);
+                          return emails.length > 0 ? (
+                            <a
+                              href={`mailto:${emails[0]}`}
+                              onClick={(e) => e.stopPropagation()}
+                              className="block text-[#0D99FF] hover:text-[#0575E6] hover:underline font-semibold truncate max-w-[160px]"
+                              title={emails[0]}
+                            >
+                              {emails[0]}
+                            </a>
+                          ) : (
+                            <span className="text-slate-400 block italic font-normal">-</span>
+                          );
+                        })()}
+                        {(() => {
+                          const phones = cleanContactInfo(lead.contactMobilePhone || lead.contactPhoneNumbers);
+                          return phones.length > 0 ? (
+                            <a
+                              href={`tel:${phones[0]}`}
+                              onClick={(e) => e.stopPropagation()}
+                              className="block text-slate-500 hover:text-slate-700 text-[10px] font-semibold"
+                            >
+                              {phones[0]}
+                            </a>
+                          ) : null;
+                        })()}
+                      </td>
+                    </>
+                  )}
 
                   {/* Status Badge */}
                   <td className="px-5 py-4">
@@ -267,14 +434,14 @@ export default function LeadsTable({ leads, filterParams = "", onRefresh }: Lead
                     </span>
                   </td>
 
-                  {/* Actions (View Profile + Undo) */}
+                  {/* Actions (View Profile + Undo + Delete) */}
                   <td className="px-5 py-4 text-right">
                     <div className="flex items-center justify-end space-x-2">
                       {/* Undo Button (Only shown if status is not new) */}
                       {lead.status !== "new" && (
                         <button
                           onClick={(e) => handleUndo(e, lead.id, lead.prospectFullName)}
-                          disabled={isUndoLoading}
+                          disabled={isUndoLoading || isDeleting}
                           className="p-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-100 hover:border-slate-300 text-slate-500 hover:text-slate-800 transition-all shadow-sm disabled:opacity-50"
                           title="Undo / Reset Status"
                         >
@@ -285,6 +452,20 @@ export default function LeadsTable({ leads, filterParams = "", onRefresh }: Lead
                           )}
                         </button>
                       )}
+
+                      {/* Delete Lead Button */}
+                      <button
+                        onClick={(e) => handleDelete(e, lead.id, lead.prospectFullName)}
+                        disabled={isDeleting || isUndoLoading}
+                        className="p-2 rounded-xl border border-slate-200 bg-white hover:bg-red-50 hover:border-red-200 hover:text-red-500 text-slate-400 transition-all shadow-sm disabled:opacity-50"
+                        title="Delete Lead Completely"
+                      >
+                        {isDeleting ? (
+                          <Loader2 className="animate-spin text-red-500" size={13} />
+                        ) : (
+                          <Trash2 size={13} />
+                        )}
+                      </button>
 
                       {/* View Profile Shortcut */}
                       <div className="p-2 rounded-xl bg-slate-50 border border-slate-200/80 text-slate-450 group-hover:bg-[#0D99FF] group-hover:border-[#0D99FF] group-hover:text-white transition-all shadow-sm">
@@ -298,6 +479,28 @@ export default function LeadsTable({ leads, filterParams = "", onRefresh }: Lead
           </tbody>
         </table>
       </div>
+
+      {/* Floating Remark Tooltip */}
+      {hoveredLead && hoveredLead.remark && (
+        <div
+          className="fixed z-50 bg-[#121A2E] text-white p-4 rounded-2xl border border-slate-700/60 shadow-2xl max-w-xs pointer-events-none text-xs flex flex-col space-y-1.5 transition-all duration-75 animate-fade-in"
+          style={{
+            left: `${mousePos.x + 15}px`,
+            top: `${mousePos.y + 15}px`,
+          }}
+        >
+          <div className="font-extrabold text-[#0D99FF] uppercase tracking-wider text-[9px]">
+            Remark for {hoveredLead.prospectFullName}
+          </div>
+          <div className="text-slate-300 leading-relaxed font-medium italic">
+            "{hoveredLead.remark}"
+          </div>
+          <div className="text-[9px] text-slate-500 font-semibold mt-1">
+            Last updated: {formatDate(hoveredLead.updatedAt)}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
+

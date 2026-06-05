@@ -38,7 +38,9 @@ export async function POST(request: Request) {
     });
 
     // Insert leads individually (MongoDB Atlas free tier does not support multi-doc transactions)
-    for (const lead of mappedData) {
+    for (let i = 0; i < mappedData.length; i++) {
+      const lead = mappedData[i];
+      const originalRow = rows[i];
       await prisma.lead.create({
         data: {
           rowNum: lead.rowNum,
@@ -61,6 +63,7 @@ export async function POST(request: Request) {
           originalCreatedAt: lead.originalCreatedAt,
           status: "new",
           uploadBatchId: batch.id,
+          rawData: JSON.stringify(originalRow),
         },
       });
     }

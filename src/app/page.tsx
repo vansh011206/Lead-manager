@@ -50,7 +50,7 @@ export default function Dashboard() {
   }, []);
 
   return (
-    <div className="p-6 sm:p-8 w-full space-y-10 animate-fade-in text-slate-600">
+    <div className="p-4 sm:p-8 w-full space-y-10 animate-fade-in text-slate-600">
       {/* Welcome Header Banner */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-slate-100 border border-slate-200/80 p-6 sm:p-8 rounded-3xl shadow-sm">
         <div>

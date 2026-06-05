@@ -56,37 +56,35 @@ async function main() {
 
     console.log(`Created UploadBatch: ${batch.id} with ${mappedData.length} records.`);
 
-    // Bulk insert leads associated with the batch
-    // SQLite supports transaction bulk inserts or loops. Let's do a createMany if supported, or insert in transaction.
-    // Since sqlite supports createMany in recent prisma versions, we can use createMany. Let's do a loop with transactions to ensure safety.
-    await prisma.$transaction(
-      mappedData.map((lead) =>
-        prisma.lead.create({
-          data: {
-            rowNum: lead.rowNum,
-            prospectFullName: lead.prospectFullName,
-            prospectJobTitle: lead.prospectJobTitle,
-            prospectLinkedin: lead.prospectLinkedin,
-            businessName: lead.businessName,
-            businessWebsite: lead.businessWebsite,
-            businessNumberOfEmployees: lead.businessNumberOfEmployees,
-            businessYearlyRevenue: lead.businessYearlyRevenue,
-            businessCountry: lead.businessCountry,
-            businessRegion: lead.businessRegion,
-            businessNaicsDescription: lead.businessNaicsDescription,
-            contactProfessionalEmail: lead.contactProfessionalEmail,
-            contactEmails: lead.contactEmails,
-            contactMobilePhone: lead.contactMobilePhone,
-            contactPhoneNumbers: lead.contactPhoneNumbers,
-            prospectId: lead.prospectId,
-            businessId: lead.businessId,
-            originalCreatedAt: lead.originalCreatedAt,
-            status: "new",
-            uploadBatchId: batch.id,
-          },
-        })
-      )
-    );
+    // Insert leads individually without transactions
+    for (let i = 0; i < mappedData.length; i++) {
+      const lead = mappedData[i];
+      await prisma.lead.create({
+        data: {
+          rowNum: lead.rowNum,
+          prospectFullName: lead.prospectFullName,
+          prospectJobTitle: lead.prospectJobTitle,
+          prospectLinkedin: lead.prospectLinkedin,
+          businessName: lead.businessName,
+          businessWebsite: lead.businessWebsite,
+          businessNumberOfEmployees: lead.businessNumberOfEmployees,
+          businessYearlyRevenue: lead.businessYearlyRevenue,
+          businessCountry: lead.businessCountry,
+          businessRegion: lead.businessRegion,
+          businessNaicsDescription: lead.businessNaicsDescription,
+          contactProfessionalEmail: lead.contactProfessionalEmail,
+          contactEmails: lead.contactEmails,
+          contactMobilePhone: lead.contactMobilePhone,
+          contactPhoneNumbers: lead.contactPhoneNumbers,
+          prospectId: lead.prospectId,
+          businessId: lead.businessId,
+          originalCreatedAt: lead.originalCreatedAt,
+          status: "new",
+          uploadBatchId: batch.id,
+          rawData: JSON.stringify(rows[i]),
+        },
+      });
+    }
 
     console.log(`Successfully seeded ${mappedData.length} leads from ${file}`);
   }
