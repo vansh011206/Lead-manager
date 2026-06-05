@@ -43,6 +43,13 @@ export function Providers({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     refreshCounts();
+
+    // Poll counts every 5 seconds so sidebar badges stay in sync
+    const interval = setInterval(() => {
+      refreshCounts();
+    }, 5000);
+
+    return () => clearInterval(interval);
   }, []);
 
   // If on login page, just render children without shell
