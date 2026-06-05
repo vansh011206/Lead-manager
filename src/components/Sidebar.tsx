@@ -20,7 +20,7 @@ export default function Sidebar() {
 
   const navItems = [
     { href: "/", label: "Dashboard", icon: Home },
-    { href: "/leads", label: "All Leads", icon: Users, badge: sidebarCounts.all },
+    { href: "/leads", label: "New Leads", icon: Users, badge: sidebarCounts.new },
     { href: "/contacted", label: "Contacted", icon: PhoneCall, badge: sidebarCounts.contacted },
     { href: "/remarked", label: "Remarked", icon: MessageSquare, badge: sidebarCounts.remarked },
     { href: "/declined", label: "Declined", icon: XCircle, badge: sidebarCounts.declined },

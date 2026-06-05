@@ -61,7 +61,9 @@ function LeadsPageContent() {
     const fetchLeads = async () => {
       try {
         setIsLoading(true);
-        const res = await fetch(`/api/leads?${searchParams.toString()}`);
+        const params = new URLSearchParams(searchParams.toString());
+        params.set("status", "new");
+        const res = await fetch(`/api/leads?${params.toString()}`);
         if (res.ok) {
           const data = await res.json();
           setLeads(data.leads);
@@ -97,10 +99,10 @@ function LeadsPageContent() {
         <div>
           <h1 className="text-2xl sm:text-4xl font-extrabold tracking-tight text-slate-800 flex items-center">
             <Users className="mr-3 text-[#0D99FF]" size={28} />
-            <span>All Leads Database</span>
+            <span>New Leads</span>
           </h1>
           <p className="text-sm text-slate-500 mt-2 font-medium">
-            Browse, filter, and drill down into individual profiles.
+            Leads awaiting action. Once contacted, remarked, or declined they move to respective sections.
           </p>
         </div>
       </div>
