@@ -1,7 +1,6 @@
 "use client";
 
 import React, { createContext, useContext, useState, useEffect } from "react";
-import { useSession } from "next-auth/react";
 import { useRouter, usePathname } from "next/navigation";
 import { Toaster } from "sonner";
 import { SidebarCounts } from "@/types";
@@ -18,7 +17,6 @@ interface AppContextType {
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export function Providers({ children }: { children: React.ReactNode }) {
-  const { data: session, status } = useSession();
   const router = useRouter();
   const pathname = usePathname();
 
@@ -44,44 +42,12 @@ export function Providers({ children }: { children: React.ReactNode }) {
   };
 
   useEffect(() => {
-    if (status === "unauthenticated" && pathname !== "/login") {
-      router.push("/login");
-    }
-  }, [status, pathname, router]);
-
-  useEffect(() => {
-    if (status === "authenticated") {
-      refreshCounts();
-    }
-  }, [status]);
-
-  // Show nothing while checking auth status
-  if (status === "loading") {
-    return (
-      <div className="flex items-center justify-center h-screen bg-[#F8FAFC]">
-        <div className="flex flex-col items-center space-y-4">
-          <div className="w-10 h-10 border-3 border-[#0D99FF]/20 border-t-[#0D99FF] rounded-full animate-spin" />
-          <p className="text-sm font-semibold text-slate-400">Loading...</p>
-        </div>
-      </div>
-    );
-  }
+    refreshCounts();
+  }, []);
 
   // If on login page, just render children without shell
   if (pathname === "/login") {
     return <>{children}</>;
-  }
-
-  // If not authenticated, don't render anything (redirect will happen via useEffect)
-  if (status === "unauthenticated") {
-    return (
-      <div className="flex items-center justify-center h-screen bg-[#F8FAFC]">
-        <div className="flex flex-col items-center space-y-4">
-          <div className="w-10 h-10 border-3 border-[#0D99FF]/20 border-t-[#0D99FF] rounded-full animate-spin" />
-          <p className="text-sm font-semibold text-slate-400">Redirecting to login...</p>
-        </div>
-      </div>
-    );
   }
 
   return (

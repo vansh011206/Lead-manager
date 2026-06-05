@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useSession, signOut } from "next-auth/react";
 import { useApp } from "@/components/Providers";
 import {
   Home,
@@ -12,14 +11,12 @@ import {
   XCircle,
   Upload,
   X,
-  LogOut,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export default function Sidebar() {
   const pathname = usePathname();
   const { sidebarCounts, isSidebarOpen, setSidebarOpen } = useApp();
-  const { data: session } = useSession();
 
   const navItems = [
     { href: "/", label: "Dashboard", icon: Home },
@@ -117,27 +114,6 @@ export default function Sidebar() {
           })}
         </nav>
 
-        {/* Sidebar Footer - User Info + Logout */}
-        <div className="p-5 border-t border-slate-850 bg-white/5 space-y-3">
-          <div>
-            <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Logged in as</div>
-            <div className="text-xs font-bold text-white truncate mt-0.5">
-              {session?.user?.name || session?.user?.email || "Admin"}
-            </div>
-            {session?.user?.email && (
-              <div className="text-[10px] text-slate-400 truncate mt-0.5">
-                {session.user.email}
-              </div>
-            )}
-          </div>
-          <button
-            onClick={() => signOut({ callbackUrl: "/login" })}
-            className="w-full flex items-center justify-center space-x-2 px-4 py-2.5 rounded-xl bg-white/5 hover:bg-red-500/15 border border-slate-700/50 hover:border-red-500/30 text-slate-300 hover:text-red-400 text-xs font-bold transition-all"
-          >
-            <LogOut size={14} />
-            <span>Sign Out</span>
-          </button>
-        </div>
       </aside>
     </>
   );
