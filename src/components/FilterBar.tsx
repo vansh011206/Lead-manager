@@ -44,7 +44,7 @@ export default function FilterBar({
     (currentIndustry !== "all") ||
     (currentBatch !== "all");
 
-  const [isExpanded, setIsExpanded] = useState(hasActiveDropdownFilters);
+  const [isExpanded, setIsExpanded] = useState(false);
 
   useEffect(() => {
     if (isInitialMount.current) {

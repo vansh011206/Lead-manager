@@ -98,8 +98,8 @@ export async function checkAndSendReminders() {
         day: "numeric",
         hour: "2-digit",
         minute: "2-digit",
-        timeZoneName: "short",
-      });
+        timeZone: "Asia/Kolkata",
+      }) + " (IST)";
 
       const subject = `⚠️ Reminder: Meeting "${meeting.title}" starting in 30 minutes!`;
       
@@ -197,8 +197,8 @@ export async function sendImmediateMeetingEmail(meeting: any, lead: any) {
     day: "numeric",
     hour: "2-digit",
     minute: "2-digit",
-    timeZoneName: "short",
-  });
+    timeZone: "Asia/Kolkata",
+  }) + " (IST)";
 
   const subject = `📅 Meeting Scheduled: "${meeting.title}" with ${lead.prospectFullName}`;
   

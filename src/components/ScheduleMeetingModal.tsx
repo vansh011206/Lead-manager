@@ -1,8 +1,9 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { X, Calendar, Clock, Sparkles, MessageSquare, ChevronUp, ChevronDown } from "lucide-react";
+import { X, Calendar, Clock, Sparkles, MessageSquare } from "lucide-react";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 
 interface Lead {
   id: string;
@@ -53,7 +54,7 @@ export default function ScheduleMeetingModal({
       if (displayHours === 0) displayHours = 12;
       setHour(displayHours);
       
-      // Snap minutes to nearest multiple of 5 for convenient scheduling
+      // Snap minutes to nearest multiple of 5
       const rawMinutes = inOneHour.getMinutes();
       const roundedMinutes = Math.round(rawMinutes / 5) * 5;
       setMinute(roundedMinutes >= 60 ? 0 : roundedMinutes);
@@ -63,41 +64,6 @@ export default function ScheduleMeetingModal({
   }, [lead, isOpen]);
 
   if (!isOpen || !lead) return null;
-
-  // Custom Time Handlers
-  const incrementHour = () => {
-    setHour((prev) => (prev === 12 ? 1 : prev + 1));
-  };
-
-  const decrementHour = () => {
-    setHour((prev) => (prev === 1 ? 12 : prev - 1));
-  };
-
-  const incrementMinute = () => {
-    setMinute((prev) => {
-      const remainder = prev % 5;
-      if (remainder !== 0) {
-        return prev + (5 - remainder);
-      }
-      const next = prev + 5;
-      return next >= 60 ? 0 : next;
-    });
-  };
-
-  const decrementMinute = () => {
-    setMinute((prev) => {
-      const remainder = prev % 5;
-      if (remainder !== 0) {
-        return prev - remainder;
-      }
-      const next = prev - 5;
-      return next < 0 ? 55 : next;
-    });
-  };
-
-  const toggleAmPm = () => {
-    setAmpm((prev) => (prev === "AM" ? "PM" : "AM"));
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -121,7 +87,6 @@ export default function ScheduleMeetingModal({
       if (ampm === "AM" && finalHour === 12) finalHour = 0;
 
       const [year, month, day] = date.split("-").map(Number);
-      // Create local date object and convert to ISO string
       const scheduledDate = new Date(year, month - 1, day, finalHour, minute);
 
       const response = await fetch("/api/meetings", {
@@ -162,7 +127,7 @@ export default function ScheduleMeetingModal({
       />
 
       {/* Modal Box */}
-      <div className="relative w-full max-w-md transform overflow-hidden rounded-3xl bg-white border border-slate-200/80 p-6 shadow-2xl transition-all animate-scale-up text-slate-700">
+      <div className="relative w-full max-w-md transform overflow-hidden rounded-3xl bg-white border border-slate-200/80 p-6 shadow-2xl transition-all animate-fade-in text-slate-700">
         
         {/* Close Button */}
         <button
@@ -216,105 +181,103 @@ export default function ScheduleMeetingModal({
             />
           </div>
 
-          {/* Date & Time Row */}
-          <div className="flex flex-col sm:flex-row gap-4">
+          {/* Date & Time Selection Box */}
+          <div className="space-y-4 bg-slate-50 border border-slate-200/60 rounded-2xl p-4">
             
-            {/* Date Selection */}
-            <div className="space-y-1.5 flex-1">
+            {/* Date Picker */}
+            <div className="space-y-1.5">
               <label className="text-xs font-bold text-slate-600 flex items-center">
                 <Calendar size={11} className="mr-1.5 text-[#0D99FF]" />
-                Date
+                Select Date
               </label>
               <input
                 type="date"
                 value={date}
                 onChange={(e) => setDate(e.target.value)}
-                className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-[#0D99FF] focus:ring-2 focus:ring-[#0D99FF]/10 text-slate-800 text-sm font-semibold transition-all outline-none"
+                className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:border-[#0D99FF] focus:ring-2 focus:ring-[#0D99FF]/10 text-slate-850 text-xs font-bold transition-all outline-none bg-white"
                 required
                 disabled={isSubmitting}
               />
             </div>
 
-            {/* Custom Time Selector with Up/Down Chevrons */}
-            <div className="space-y-1.5 w-full sm:w-auto">
-              <label className="text-xs font-bold text-slate-600 flex items-center">
-                <Clock size={11} className="mr-1.5 text-[#0D99FF]" />
-                Time
-              </label>
-              <div className="flex items-center space-x-1.5 bg-slate-50 border border-slate-200 rounded-xl p-1.5 h-[42px] justify-center">
-                
-                {/* Hour */}
-                <div className="flex flex-col items-center justify-between h-full">
-                  <button
-                    type="button"
-                    onClick={incrementHour}
-                    disabled={isSubmitting}
-                    className="text-slate-400 hover:text-slate-800 transition-colors disabled:opacity-50"
-                  >
-                    <ChevronUp size={13} />
-                  </button>
-                  <span className="w-5 text-center text-xs font-extrabold text-slate-800 select-none leading-none">
+            {/* Custom Sliding Time Selection */}
+            <div className="flex flex-col gap-3.5 pt-3.5 border-t border-slate-200/60">
+              
+              {/* Hours Slider */}
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between text-[11px] font-bold text-slate-600">
+                  <span className="flex items-center">
+                    <Clock size={11} className="mr-1.5 text-[#0D99FF]" />
+                    Hour (1 - 12)
+                  </span>
+                  <span className="bg-slate-100 text-slate-800 px-2 py-0.5 rounded-lg font-black text-xs border border-slate-200 select-none">
                     {String(hour).padStart(2, "0")}
                   </span>
-                  <button
-                    type="button"
-                    onClick={decrementHour}
-                    disabled={isSubmitting}
-                    className="text-slate-400 hover:text-slate-800 transition-colors disabled:opacity-50"
-                  >
-                    <ChevronDown size={13} />
-                  </button>
                 </div>
+                <input
+                  type="range"
+                  min="1"
+                  max="12"
+                  step="1"
+                  value={hour}
+                  onChange={(e) => setHour(parseInt(e.target.value))}
+                  disabled={isSubmitting}
+                  className="w-full h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-[#0D99FF] focus:outline-none transition-all"
+                />
+              </div>
 
-                <span className="text-xs font-extrabold text-slate-400 select-none">:</span>
-
-                {/* Minute */}
-                <div className="flex flex-col items-center justify-between h-full">
-                  <button
-                    type="button"
-                    onClick={incrementMinute}
-                    disabled={isSubmitting}
-                    className="text-slate-400 hover:text-slate-800 transition-colors disabled:opacity-50"
-                  >
-                    <ChevronUp size={13} />
-                  </button>
-                  <span className="w-5 text-center text-xs font-extrabold text-slate-800 select-none leading-none">
+              {/* Minutes Slider */}
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between text-[11px] font-bold text-slate-600">
+                  <span className="flex items-center">
+                    <Clock size={11} className="mr-1.5 text-[#0D99FF]" />
+                    Minute (00 - 55)
+                  </span>
+                  <span className="bg-slate-100 text-slate-800 px-2 py-0.5 rounded-lg font-black text-xs border border-slate-200 select-none">
                     {String(minute).padStart(2, "0")}
                   </span>
-                  <button
-                    type="button"
-                    onClick={decrementMinute}
-                    disabled={isSubmitting}
-                    className="text-slate-400 hover:text-slate-800 transition-colors disabled:opacity-50"
-                  >
-                    <ChevronDown size={13} />
-                  </button>
                 </div>
-
-                {/* AM/PM */}
-                <div className="flex flex-col items-center justify-between h-full pl-1">
-                  <button
-                    type="button"
-                    onClick={toggleAmPm}
-                    disabled={isSubmitting}
-                    className="text-slate-400 hover:text-slate-800 transition-colors disabled:opacity-50"
-                  >
-                    <ChevronUp size={13} />
-                  </button>
-                  <span className="w-6 text-center text-[10px] font-black text-slate-800 select-none leading-none uppercase">
-                    {ampm}
-                  </span>
-                  <button
-                    type="button"
-                    onClick={toggleAmPm}
-                    disabled={isSubmitting}
-                    className="text-slate-400 hover:text-slate-800 transition-colors disabled:opacity-50"
-                  >
-                    <ChevronDown size={13} />
-                  </button>
-                </div>
-
+                <input
+                  type="range"
+                  min="0"
+                  max="55"
+                  step="5"
+                  value={minute}
+                  onChange={(e) => setMinute(parseInt(e.target.value))}
+                  disabled={isSubmitting}
+                  className="w-full h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-[#0D99FF] focus:outline-none transition-all"
+                />
               </div>
+
+              {/* AM/PM Toggle */}
+              <div className="space-y-1.5">
+                <span className="text-[11px] font-bold text-slate-600 block">Period</span>
+                <div className="flex rounded-xl bg-slate-200/60 p-0.5 h-[34px] items-center w-full">
+                  <button
+                    type="button"
+                    onClick={() => setAmpm("AM")}
+                    disabled={isSubmitting}
+                    className={cn(
+                      "flex-1 h-full rounded-lg text-xs font-black transition-all",
+                      ampm === "AM" ? "bg-white text-slate-800 shadow-sm border border-slate-200/50" : "text-slate-500 hover:text-slate-700"
+                    )}
+                  >
+                    AM
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setAmpm("PM")}
+                    disabled={isSubmitting}
+                    className={cn(
+                      "flex-1 h-full rounded-lg text-xs font-black transition-all",
+                      ampm === "PM" ? "bg-white text-slate-800 shadow-sm border border-slate-200/50" : "text-slate-500 hover:text-slate-700"
+                    )}
+                  >
+                    PM
+                  </button>
+                </div>
+              </div>
+
             </div>
 
           </div>
@@ -330,7 +293,7 @@ export default function ScheduleMeetingModal({
               onChange={(e) => setAgenda(e.target.value)}
               placeholder="Include Google Meet links or discussion agenda..."
               rows={3}
-              className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-[#0D99FF] focus:ring-2 focus:ring-[#0D99FF]/10 text-slate-800 text-sm font-medium transition-all outline-none resize-none"
+              className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-[#0D99FF] focus:ring-2 focus:ring-[#0D99FF]/10 text-slate-800 text-sm font-medium transition-all outline-none resize-none bg-white"
               disabled={isSubmitting}
             />
           </div>

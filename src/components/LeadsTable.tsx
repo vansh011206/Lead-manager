@@ -60,6 +60,88 @@ export default function LeadsTable({ leads, filterParams = "", onRefresh }: Lead
   const [hoveredLead, setHoveredLead] = useState<Lead | null>(null);
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
   const [selectedLeadForMeeting, setSelectedLeadForMeeting] = useState<Lead | null>(null);
+  const [selectedLeadIds, setSelectedLeadIds] = useState<string[]>([]);
+
+  const handleSelectLead = (id: string) => {
+    setSelectedLeadIds((prev) =>
+      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
+    );
+  };
+
+  const handleSelectAllGroup = (groupLeads: Lead[]) => {
+    const groupIds = groupLeads.map((l) => l.id);
+    const allSelected = groupIds.every((id) => selectedLeadIds.includes(id));
+    
+    if (allSelected) {
+      setSelectedLeadIds((prev) => prev.filter((id) => !groupIds.includes(id)));
+    } else {
+      setSelectedLeadIds((prev) => {
+        const unique = new Set([...prev, ...groupIds]);
+        return Array.from(unique);
+      });
+    }
+  };
+
+  const handleBulkStatusChange = async (status: string, remark?: string) => {
+    try {
+      const res = await fetch("/api/leads/bulk", {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          ids: selectedLeadIds,
+          status,
+          remark: remark || null,
+        }),
+      });
+
+      if (!res.ok) {
+        throw new Error("Failed to bulk update status");
+      }
+
+      toast.success(`Successfully updated status for ${selectedLeadIds.length} leads!`);
+      setSelectedLeadIds([]);
+      onRefresh();
+    } catch (err: any) {
+      console.error("Bulk status change error:", err);
+      toast.error(err.message || "Failed to bulk update leads");
+    }
+  };
+
+  const handleBulkRemark = async () => {
+    const remark = window.prompt("Enter remark for selected leads:");
+    if (remark === null) return; // cancelled
+    await handleBulkStatusChange("remarked", remark);
+  };
+
+  const handleBulkDelete = async () => {
+    const confirmed = window.confirm(`Are you sure you want to delete ${selectedLeadIds.length} leads?`);
+    if (!confirmed) return;
+
+    try {
+      const res = await fetch("/api/leads/bulk", {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          ids: selectedLeadIds,
+        }),
+      });
+
+      if (!res.ok) {
+        throw new Error("Failed to bulk delete leads");
+      }
+
+      toast.success(`Successfully deleted ${selectedLeadIds.length} leads!`);
+      setSelectedLeadIds([]);
+      onRefresh();
+    } catch (err: any) {
+      console.error("Bulk delete error:", err);
+      toast.error(err.message || "Failed to bulk delete leads");
+    }
+  };
 
   // Custom Status Pill Color Overrides for Light Theme
   const getLightStatusStyle = (status: string) => {
@@ -349,8 +431,15 @@ export default function LeadsTable({ leads, filterParams = "", onRefresh }: Lead
               <div className="overflow-x-auto">
                 <table className="w-full text-left border-collapse text-xs">
                   <thead>
-                    <tr className="bg-slate-50 border-b border-slate-200 text-slate-500 font-semibold tracking-wider">
-                      <th className="px-5 py-4 font-bold text-center w-12">#</th>
+                    <tr className="bg-slate-50 border-b border-slate-200 text-slate-500 font-semibold tracking-wider select-none">
+                      <th className="px-5 py-4 text-center w-12">
+                        <input
+                          type="checkbox"
+                          checked={group.leads.length > 0 && group.leads.every((l) => selectedLeadIds.includes(l.id))}
+                          onChange={() => handleSelectAllGroup(group.leads)}
+                          className="w-4 h-4 rounded border-slate-300 text-[#0D99FF] focus:ring-[#0D99FF] cursor-pointer accent-[#0D99FF]"
+                        />
+                      </th>
                       {dynamicHeaders.length > 0 ? (
                         dynamicHeaders.map((header) => (
                           <th key={header} className="px-5 py-4 font-bold min-w-[150px]">
@@ -400,9 +489,14 @@ export default function LeadsTable({ leads, filterParams = "", onRefresh }: Lead
                           onMouseLeave={() => setHoveredLead(null)}
                           className="hover:bg-slate-50/70 transition-colors cursor-pointer group"
                         >
-                          {/* Serial Row Number */}
-                          <td className="px-5 py-4 font-mono text-slate-400 text-center">
-                            {lead.rowNum || idx + 1}
+                          {/* Checkbox Selector */}
+                          <td className="px-5 py-4 text-center w-12 select-none" onClick={(e) => e.stopPropagation()}>
+                            <input
+                              type="checkbox"
+                              checked={selectedLeadIds.includes(lead.id)}
+                              onChange={() => handleSelectLead(lead.id)}
+                              className="w-4 h-4 rounded border-slate-350 text-[#0D99FF] focus:ring-[#0D99FF]/30 cursor-pointer accent-[#0D99FF]"
+                            />
                           </td>
 
                           {/* Render Cells */}
@@ -676,6 +770,75 @@ export default function LeadsTable({ leads, filterParams = "", onRefresh }: Lead
           {/* Footer date */}
           <div className="text-[10px] text-slate-400 font-semibold pt-2 border-t border-slate-100">
             Last updated: {formatDate(hoveredLead.updatedAt)}
+          </div>
+        </div>
+      )}
+
+      {/* Bulk Actions Panel */}
+      {selectedLeadIds.length > 0 && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 w-full max-w-md px-4 animate-scale-up">
+          <div className="bg-white border border-slate-200 shadow-[0_20px_50px_rgba(15,23,42,0.12)] rounded-3xl p-3.5 flex items-center justify-between gap-4 text-slate-700">
+            <div className="flex items-center space-x-2.5">
+              <span className="text-xs font-black bg-[#0D99FF] text-white w-6 h-6 rounded-full flex items-center justify-center select-none shadow-sm">
+                {selectedLeadIds.length}
+              </span>
+              <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Selected</span>
+            </div>
+            
+            <div className="flex items-center space-x-2">
+              {/* Move to dropdown */}
+              <div className="relative group">
+                <button
+                  type="button"
+                  className="px-3.5 py-2 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl text-[10px] font-extrabold transition-all flex items-center gap-1.5 text-slate-750 uppercase tracking-wider shadow-sm"
+                >
+                  Move to
+                </button>
+                {/* Dropdown panel */}
+                <div className="absolute bottom-full right-0 mb-2 w-36 bg-white border border-slate-200 shadow-2xl rounded-xl p-1 space-y-0.5 z-50 hidden group-hover:block">
+                  <button
+                    type="button"
+                    onClick={() => handleBulkStatusChange("contacted")}
+                    className="w-full text-left px-2.5 py-2 hover:bg-emerald-50 rounded-lg text-[10px] font-extrabold text-emerald-600 uppercase tracking-wider"
+                  >
+                    Contacted
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleBulkRemark()}
+                    className="w-full text-left px-2.5 py-2 hover:bg-amber-50 rounded-lg text-[10px] font-extrabold text-amber-600 uppercase tracking-wider"
+                  >
+                    Remarked
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleBulkStatusChange("declined")}
+                    className="w-full text-left px-2.5 py-2 hover:bg-red-50 rounded-lg text-[10px] font-extrabold text-red-650 uppercase tracking-wider"
+                  >
+                    Declined
+                  </button>
+                </div>
+              </div>
+
+              {/* Delete button */}
+              <button
+                type="button"
+                onClick={handleBulkDelete}
+                className="px-3.5 py-2 bg-red-55/60 hover:bg-red-500 border border-red-100 hover:border-red-500 text-red-600 hover:text-white rounded-xl text-[10px] font-extrabold transition-all flex items-center gap-1 uppercase tracking-wider shadow-sm"
+              >
+                <Trash2 size={12} className="shrink-0" />
+                <span>Delete</span>
+              </button>
+
+              {/* Cancel selection */}
+              <button
+                type="button"
+                onClick={() => setSelectedLeadIds([])}
+                className="px-3 py-2 hover:bg-slate-50 text-slate-450 hover:text-slate-750 text-[10px] font-extrabold rounded-xl transition-all uppercase tracking-wider"
+              >
+                Cancel
+              </button>
+            </div>
           </div>
         </div>
       )}
