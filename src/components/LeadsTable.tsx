@@ -2,10 +2,11 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { MapPin, Briefcase, Building, MessageSquare, Layers, ArrowRight, RotateCcw, Loader2, Trash2 } from "lucide-react";
+import { MapPin, Briefcase, Building, MessageSquare, Layers, ArrowRight, RotateCcw, Loader2, Trash2, Calendar, Clock } from "lucide-react";
 import { getNameColor, getNameInitials, getStatusColor } from "@/lib/nameToColor";
 import { cn, formatDate, cleanContactInfo } from "@/lib/utils";
 import { toast } from "sonner";
+import ScheduleMeetingModal from "@/components/ScheduleMeetingModal";
 
 const LinkedinIcon = ({ className, size = 16 }: { className?: string; size?: number }) => (
   <svg
@@ -43,6 +44,7 @@ interface Lead {
   updatedAt: string;
   rawData?: string | null;
   uploadBatch?: { id: string; fileName: string; uploadedAt: string } | null;
+  meetings?: any[];
 }
 
 interface LeadsTableProps {
@@ -57,6 +59,7 @@ export default function LeadsTable({ leads, filterParams = "", onRefresh }: Lead
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [hoveredLead, setHoveredLead] = useState<Lead | null>(null);
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
+  const [selectedLeadForMeeting, setSelectedLeadForMeeting] = useState<Lead | null>(null);
 
   // Custom Status Pill Color Overrides for Light Theme
   const getLightStatusStyle = (status: string) => {
@@ -392,7 +395,7 @@ export default function LeadsTable({ leads, filterParams = "", onRefresh }: Lead
                         <tr
                           key={lead.id}
                           onClick={() => router.push(`/lead/${lead.id}${filterParams ? `?${filterParams}` : ""}`)}
-                          onMouseEnter={() => lead.remark && setHoveredLead(lead)}
+                          onMouseEnter={() => (lead.remark || (lead.meetings && lead.meetings.length > 0)) && setHoveredLead(lead)}
                           onMouseMove={(e) => setMousePos({ x: e.clientX, y: e.clientY })}
                           onMouseLeave={() => setHoveredLead(null)}
                           className="hover:bg-slate-50/70 transition-colors cursor-pointer group"
@@ -541,6 +544,29 @@ export default function LeadsTable({ leads, filterParams = "", onRefresh }: Lead
                           {/* Actions */}
                           <td className="px-5 py-4 text-right">
                             <div className="flex items-center justify-end space-x-2">
+                              {/* Schedule / Scheduled Meeting */}
+                              {lead.status === "contacted" && (() => {
+                                const hasMeeting = lead.meetings && lead.meetings.length > 0;
+                                return (
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setSelectedLeadForMeeting(lead);
+                                    }}
+                                    className={cn(
+                                      "px-2.5 py-1.5 rounded-xl border transition-all shadow-sm flex items-center gap-1 text-[10px] font-extrabold shrink-0",
+                                      hasMeeting
+                                        ? "border-slate-200 bg-slate-50 text-slate-450 hover:bg-slate-100 hover:text-slate-655"
+                                        : "border-emerald-200 bg-emerald-50 hover:bg-emerald-100 text-emerald-650 hover:text-emerald-700"
+                                    )}
+                                    title={hasMeeting ? "View or Reschedule Meeting" : "Schedule Meeting"}
+                                  >
+                                    <Calendar size={12} />
+                                    <span>{hasMeeting ? "Scheduled" : "Schedule"}</span>
+                                  </button>
+                                );
+                              })()}
+
                               {/* Undo Button */}
                               {lead.status !== "new" && (
                                 <button
@@ -588,27 +614,79 @@ export default function LeadsTable({ leads, filterParams = "", onRefresh }: Lead
         );
       })}
 
-      {/* Floating Remark Tooltip */}
-      {hoveredLead && hoveredLead.remark && (
+      {/* Floating Tooltip (Remark & Meeting Info) */}
+      {hoveredLead && (hoveredLead.remark || (hoveredLead.meetings && hoveredLead.meetings.length > 0)) && (
         <div
-          className="fixed z-50 bg-white/98 backdrop-blur-md text-slate-800 p-4 rounded-2xl border-2 border-amber-500/30 shadow-[0_12px_36px_rgba(245,158,11,0.12)] max-w-xs pointer-events-none text-xs flex flex-col space-y-1.5 transition-all duration-75 animate-fade-in"
+          className="fixed z-50 bg-white text-slate-800 p-5 rounded-2xl border border-slate-200/90 shadow-[0_16px_48px_rgba(15,23,42,0.12)] max-w-sm w-[340px] pointer-events-none text-xs flex flex-col space-y-3.5 transition-all duration-75 animate-fade-in"
           style={{
             left: `${mousePos.x + 15}px`,
             top: `${mousePos.y + 15}px`,
           }}
         >
-          <div className="font-extrabold text-amber-600 uppercase tracking-widest text-[9px] flex items-center space-x-1.5">
-            <MessageSquare size={10} className="text-amber-500 shrink-0" />
-            <span>Remark for {hoveredLead.prospectFullName}</span>
-          </div>
-          <div className="text-slate-700 leading-relaxed font-semibold italic text-[11px] sm:text-xs">
-            "{hoveredLead.remark}"
-          </div>
-          <div className="text-[9px] text-slate-400 font-semibold mt-1.5 pt-1.5 border-t border-slate-100">
+          {/* Remark section */}
+          {hoveredLead.remark && (
+            <div className="flex flex-col space-y-1.5">
+              <div className="font-extrabold text-amber-650 uppercase tracking-wider text-[10px] flex items-center space-x-1.5">
+                <MessageSquare size={12} className="text-amber-500 shrink-0" />
+                <span>Remark for {hoveredLead.prospectFullName}</span>
+              </div>
+              <div className="text-slate-700 leading-relaxed font-bold italic text-[13px]">
+                "{hoveredLead.remark}"
+              </div>
+            </div>
+          )}
+
+          {/* Divider if both exist */}
+          {hoveredLead.remark && hoveredLead.meetings && hoveredLead.meetings.length > 0 && (
+            <div className="border-t border-slate-100 my-1" />
+          )}
+
+          {/* Meeting section */}
+          {hoveredLead.meetings && hoveredLead.meetings.length > 0 && (() => {
+            const meeting = hoveredLead.meetings[hoveredLead.meetings.length - 1];
+            const formattedDate = new Date(meeting.scheduledAt).toLocaleString("en-US", {
+              weekday: "short",
+              month: "short",
+              day: "numeric",
+              hour: "2-digit",
+              minute: "2-digit",
+            });
+            return (
+              <div className="flex flex-col space-y-2">
+                <div className="font-extrabold text-emerald-650 uppercase tracking-wider text-[10px] flex items-center space-x-1.5">
+                  <Calendar size={12} className="text-emerald-500 shrink-0" />
+                  <span>Scheduled Meeting</span>
+                </div>
+                <div className="bg-emerald-50/60 border border-emerald-100 rounded-xl p-3 flex flex-col space-y-1.5 text-slate-750">
+                  <div className="font-extrabold text-slate-800 text-[12px] leading-snug">{meeting.title}</div>
+                  <div className="flex items-center text-emerald-700 text-[11px] gap-1 font-bold">
+                    <Clock size={11} className="text-emerald-500" />
+                    <span>{formattedDate}</span>
+                  </div>
+                  {meeting.agenda && (
+                    <div className="text-slate-500 font-medium italic text-[11px] mt-0.5 line-clamp-2 leading-relaxed">
+                      "{meeting.agenda}"
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+          })()}
+
+          {/* Footer date */}
+          <div className="text-[10px] text-slate-400 font-semibold pt-2 border-t border-slate-100">
             Last updated: {formatDate(hoveredLead.updatedAt)}
           </div>
         </div>
       )}
+
+      {/* Schedule Meeting Modal */}
+      <ScheduleMeetingModal
+        isOpen={!!selectedLeadForMeeting}
+        onClose={() => setSelectedLeadForMeeting(null)}
+        lead={selectedLeadForMeeting}
+        onSuccess={onRefresh}
+      />
     </div>
   );
 }

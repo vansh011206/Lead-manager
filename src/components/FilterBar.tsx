@@ -139,16 +139,19 @@ export default function FilterBar({
             <button
               onClick={() => setIsExpanded(!isExpanded)}
               className={cn(
-                "flex items-center justify-center space-x-2 px-4.5 py-2.5 rounded-xl border font-bold text-xs uppercase tracking-widest transition-all duration-250 shrink-0",
+                "flex items-center justify-center space-x-2 px-4 py-2.5 rounded-xl border transition-all duration-200 shrink-0 text-xs font-bold",
                 isExpanded
-                  ? "bg-[#0D99FF]/10 border-[#0D99FF]/30 text-[#0D99FF] hover:bg-[#0D99FF]/15"
-                  : "bg-white hover:bg-slate-50 border-slate-200 text-slate-600 hover:text-slate-800"
+                  ? "bg-[#0D99FF] border-[#0D99FF] text-white shadow-md shadow-[#0D99FF]/20"
+                  : "bg-white hover:bg-slate-50 border-slate-250 text-slate-600 hover:text-slate-800"
               )}
             >
-              <SlidersHorizontal size={13} className={isExpanded ? "text-[#0D99FF]" : "text-slate-500"} />
+              <SlidersHorizontal size={13} className={isExpanded ? "text-white" : "text-slate-550"} />
               <span>Apply Filters</span>
               {hasActiveDropdownFilters && (
-                <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse ml-1 shrink-0" />
+                <span className={cn(
+                  "w-1.5 h-1.5 rounded-full ml-1 shrink-0",
+                  isExpanded ? "bg-white" : "bg-red-500 animate-pulse"
+                )} />
               )}
             </button>
           </div>

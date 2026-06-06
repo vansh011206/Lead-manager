@@ -29,6 +29,7 @@ interface Lead {
   createdAt: string;
   updatedAt: string;
   uploadBatch: { id: string; fileName: string; uploadedAt: string } | null;
+  meetings?: any[];
 }
 
 function LeadDetailPageContent() {

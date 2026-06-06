@@ -19,6 +19,7 @@ import {
   Phone,
   Trash2,
   Loader2,
+  Clock,
 } from "lucide-react";
 import { getStatusColor, getNameColor } from "@/lib/nameToColor";
 import { formatDate, cleanContactInfo, getFirstPhone } from "@/lib/utils";
@@ -42,7 +43,7 @@ const LinkedinIcon = ({ className, size = 16 }: { className?: string; size?: num
 );
 
 interface LeadDetailProps {
-  lead: Lead & { uploadBatch: UploadBatch | null };
+  lead: Lead & { uploadBatch: UploadBatch | null; meetings?: any[] };
   backUrl: string;
   onAction: (status: string, remark?: string) => Promise<void>;
   isLoading: boolean;
@@ -425,6 +426,45 @@ export default function LeadDetail({ lead, backUrl, onAction, isLoading, hasNext
             <p className="mt-3 text-base text-slate-700 leading-relaxed italic bg-white p-5 rounded-xl border border-amber-200/60">
               &quot;{lead.remark}&quot;
             </p>
+          </div>
+        )}
+
+        {/* Section: Scheduled Meetings */}
+        {lead.meetings && lead.meetings.length > 0 && (
+          <div className="col-span-1 md:col-span-2 bg-emerald-50 border border-emerald-200/80 rounded-3xl p-8 sm:p-10">
+            <h3 className="text-sm font-bold text-emerald-700 pb-3 flex items-center uppercase tracking-wider border-b border-emerald-100/60">
+              <Calendar className="mr-2 text-emerald-500" size={16} />
+              <span>Scheduled Meetings</span>
+            </h3>
+            <div className="mt-6 space-y-4">
+              {lead.meetings.map((meeting: any) => {
+                const formattedDate = new Date(meeting.scheduledAt).toLocaleString("en-US", {
+                  weekday: "long",
+                  year: "numeric",
+                  month: "long",
+                  day: "numeric",
+                  hour: "2-digit",
+                  minute: "2-digit",
+                });
+                return (
+                  <div key={meeting.id} className="bg-white p-5 rounded-2xl border border-emerald-150 shadow-sm flex flex-col space-y-2.5">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                      <h4 className="text-base font-extrabold text-slate-800">{meeting.title}</h4>
+                      <span className="inline-flex items-center text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-100 px-3 py-1 rounded-full w-fit">
+                        <Clock size={12} className="mr-1.5" />
+                        {formattedDate}
+                      </span>
+                    </div>
+                    {meeting.agenda && (
+                      <div className="text-sm text-slate-600 bg-slate-50 rounded-xl p-3.5 border border-slate-100 font-medium">
+                        <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Agenda / Notes</div>
+                        <p className="whitespace-pre-wrap">{meeting.agenda}</p>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
           </div>
         )}
 

@@ -67,6 +67,7 @@ export async function GET(request: Request) {
         take: limit,
         include: {
           uploadBatch: true,
+          meetings: true,
         },
       }),
       prisma.lead.count({ where }),

@@ -9,7 +9,7 @@ export async function GET(
     const id = params.id;
     const lead = await prisma.lead.findUnique({
       where: { id },
-      include: { uploadBatch: true },
+      include: { uploadBatch: true, meetings: true },
     });
 
     if (!lead) {
