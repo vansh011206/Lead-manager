@@ -34,7 +34,7 @@ export default function Dashboard() {
 
     const fetchRecentUploads = async () => {
       try {
-        const res = await fetch("/api/uploads");
+        const res = await fetch("/api/uploads", { cache: "no-store" });
         if (res.ok) {
           const data = await res.json();
           setRecentUploads(data.slice(0, 5));

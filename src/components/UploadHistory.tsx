@@ -20,7 +20,7 @@ interface BatchItem {
 interface UploadHistoryProps {
   batches: BatchItem[];
   isLoading: boolean;
-  onDeleteSuccess?: () => void;
+  onDeleteSuccess?: (deletedId: string) => void;
 }
 
 export default function UploadHistory({ batches, isLoading, onDeleteSuccess }: UploadHistoryProps) {
@@ -51,7 +51,7 @@ export default function UploadHistory({ batches, isLoading, onDeleteSuccess }: U
       const res = await fetch(`/api/uploads/${batch.id}`, { method: "DELETE" });
       if (res.ok) {
         toast.success(`Successfully deleted "${batch.fileName}" and all associated leads.`);
-        onDeleteSuccess?.();
+        onDeleteSuccess?.(batch.id);
       } else {
         const data = await res.json();
         toast.error(data.error || "Failed to delete dataset.");

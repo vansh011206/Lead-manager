@@ -31,7 +31,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
 
   const refreshCounts = async () => {
     try {
-      const res = await fetch("/api/leads/counts");
+      const res = await fetch("/api/leads/counts", { cache: "no-store" });
       if (res.ok) {
         const data = await res.json();
         setSidebarCounts(data);

@@ -13,7 +13,7 @@ export default function UploadsPage() {
   const fetchHistory = async () => {
     try {
       setIsLoading(true);
-      const res = await fetch("/api/uploads");
+      const res = await fetch("/api/uploads", { cache: "no-store" });
       if (res.ok) {
         const data = await res.json();
         setBatches(data);
@@ -25,7 +25,10 @@ export default function UploadsPage() {
     }
   };
 
-  const handleDeleteSuccess = async () => {
+  const handleDeleteSuccess = async (deletedId?: string) => {
+    if (deletedId) {
+      setBatches((prev) => prev.filter((b: any) => b.id !== deletedId));
+    }
     await fetchHistory();
     await refreshCounts();
   };

@@ -20,6 +20,7 @@ import {
   Trash2,
   Loader2,
   Clock,
+  Sparkles,
 } from "lucide-react";
 import { getStatusColor, getNameColor } from "@/lib/nameToColor";
 import { formatDate, cleanContactInfo, getFirstPhone } from "@/lib/utils";
@@ -27,6 +28,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import RemarkModal from "@/components/RemarkModal";
+import CallScriptModal from "@/components/CallScriptModal";
 import { toast } from "sonner";
 
 const LinkedinIcon = ({ className, size = 16 }: { className?: string; size?: number }) => (
@@ -53,6 +55,7 @@ interface LeadDetailProps {
 export default function LeadDetail({ lead, backUrl, onAction, isLoading, hasNext }: LeadDetailProps) {
   const router = useRouter();
   const [isRemarkOpen, setRemarkOpen] = useState(false);
+  const [isScriptOpen, setScriptOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const statusStyle = getStatusColor(lead.status);
   const nameGradient = getNameColor(lead.prospectFullName);
@@ -112,7 +115,7 @@ export default function LeadDetail({ lead, backUrl, onAction, isLoading, hasNext
   };
 
   return (
-    <div className="space-y-6 text-slate-700 pb-28">
+    <div className="space-y-6 text-slate-700 pb-10">
       {/* Breadcrumbs & Back Button */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex items-center space-x-2 text-xs font-bold text-slate-400 uppercase tracking-wider">
@@ -204,6 +207,14 @@ export default function LeadDetail({ lead, backUrl, onAction, isLoading, hasNext
             </div>
           </div>
           <div className="mt-4 sm:mt-0 flex flex-wrap items-center gap-2">
+            <button
+              onClick={() => setScriptOpen(true)}
+              className="inline-flex items-center space-x-2 px-4 sm:px-5 py-2 sm:py-2.5 rounded-xl bg-gradient-to-r from-[#0D99FF] to-[#00C2FF] hover:from-[#0575E6] hover:to-[#00A3D9] text-white font-extrabold text-xs shadow-md shadow-blue-500/10 transition-all hover:-translate-y-0.5"
+            >
+              <Sparkles size={14} className="animate-pulse" />
+              <span>View Script</span>
+            </button>
+
             {lead.prospectLinkedin && (
               <a
                 href={formatLinkedinUrl(lead.prospectLinkedin)}
@@ -536,7 +547,7 @@ export default function LeadDetail({ lead, backUrl, onAction, isLoading, hasNext
       </div>
 
       {/* Floating Action Dock Panel */}
-      <div className="fixed bottom-4 sm:bottom-6 left-1/2 -translate-x-1/2 z-40 w-full max-w-3xl lg:max-w-4xl px-3 sm:px-4 animate-scale-up">
+      <div className="sticky bottom-4 sm:bottom-6 z-40 w-full max-w-3xl lg:max-w-4xl mx-auto px-3 sm:px-4 mt-8 animate-scale-up">
         <div className="bg-white border border-slate-200 shadow-xl rounded-2xl p-3 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="w-[280px] pr-4 hidden sm:block shrink-0">
             <p className="text-[10px] font-extrabold text-[#0D99FF] uppercase tracking-widest">
@@ -590,6 +601,13 @@ export default function LeadDetail({ lead, backUrl, onAction, isLoading, hasNext
           setRemarkOpen(false);
           await handleStatusChange("remarked", remarkText);
         }}
+      />
+
+      {/* AI Cold Call Script Modal Overlay */}
+      <CallScriptModal
+        isOpen={isScriptOpen}
+        onClose={() => setScriptOpen(false)}
+        lead={lead}
       />
     </div>
   );
