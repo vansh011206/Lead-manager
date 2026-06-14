@@ -51,9 +51,11 @@ export default function Sidebar() {
             className="flex items-center space-x-2"
             onClick={() => setSidebarOpen(false)}
           >
-            <span className="text-xl font-extrabold tracking-wider text-white">
-              ForgeWeb
-            </span>
+            <img
+              src="/forgeweb-logo.webp"
+              alt="ForgeWeb Logo"
+              className="h-8 w-auto object-contain brightness-0 invert"
+            />
             <span className="text-[10px] uppercase px-2 py-0.5 rounded-full bg-white/10 border border-white/20 text-white font-bold">
               Leads
             </span>

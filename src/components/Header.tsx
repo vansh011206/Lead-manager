@@ -16,10 +16,12 @@ export default function Header() {
       >
         <Menu size={24} />
       </button>
-      <Link href="/" className="flex items-center space-x-2">
-        <span className="text-lg font-extrabold tracking-wider text-[#0D99FF]">
-          ForgeWeb
-        </span>
+      <Link href="/" className="flex items-center">
+        <img
+          src="/forgeweb-logo.webp"
+          alt="ForgeWeb Logo"
+          className="h-8 w-auto object-contain"
+        />
       </Link>
       <div className="w-8 h-8 rounded-full bg-[#0D99FF]/10 flex items-center justify-center text-xs font-bold text-[#0D99FF]">
         FW
