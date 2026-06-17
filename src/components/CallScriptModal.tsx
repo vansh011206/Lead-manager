@@ -26,7 +26,20 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { ColdCallScriptResponse } from "@/lib/gemini";
-import { getFirstPhone } from "@/lib/utils";
+import { getFirstPhone, getWhatsappLink } from "@/lib/utils";
+
+const WhatsappIcon = ({ className, size = 16 }: { className?: string; size?: number }) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    viewBox="0 0 24 24"
+    fill="currentColor"
+    width={size}
+    height={size}
+    className={className}
+  >
+    <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946C.062 5.248 5.835 0 12.928 0c3.437.002 6.671 1.34 9.1 3.77 2.43 2.43 3.765 5.666 3.764 9.103-.005 6.965-5.78 12.213-12.871 12.213-.005 0-.01 0-.014 0-2.007-.001-3.98-.513-5.732-1.488L0 24zm6.076-4.542l.363.216c1.714 1.018 3.69 1.554 5.717 1.556 5.89 0 10.684-4.512 10.688-10.058.002-2.686-1.043-5.212-2.943-7.115-1.9-1.9-4.43-2.946-7.118-2.947-5.9 0-10.69 4.515-10.694 10.061-.001 2.032.532 4.02 1.54 5.762l.24.412-1.01 3.694 3.784-.992zm11.286-5.187c-.31-.156-1.839-.907-2.121-1.01-.28-.104-.486-.156-.69.156-.203.312-.787 1.01-.966 1.217-.177.208-.356.233-.666.078-.31-.156-1.307-.48-2.49-1.536-.919-.82-1.54-1.834-1.72-2.145-.18-.313-.018-.482.137-.636.14-.138.31-.363.466-.545.156-.18.208-.31.31-.52.105-.207.052-.39-.026-.546-.078-.156-.69-1.66-.944-2.274-.25-.6-.525-.52-.72-.53l-.612-.01c-.28 0-.738.105-1.124.522-.387.417-1.477 1.442-1.477 3.513 0 2.07 1.51 4.07 1.72 4.35.207.28 2.972 4.538 7.198 6.36 1.005.433 1.79.69 2.4.883 1.01.32 1.93.276 2.658.168.812-.122 2.502-1.023 2.85-2.01.348-.99.348-1.838.244-2.01-.104-.173-.38-.277-.69-.434z" />
+  </svg>
+);
 
 interface CallScriptModalProps {
   isOpen: boolean;
@@ -666,6 +679,15 @@ export default function CallScriptModal({
                         title="Dial Number"
                       >
                         <Phone size={10} />
+                      </a>
+                      <a
+                        href={getWhatsappLink(leadPhone)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="p-1 rounded bg-[#25D366] hover:bg-[#1ebd59] text-white transition-all shadow-sm"
+                        title="Chat on WhatsApp"
+                      >
+                        <WhatsappIcon size={10} />
                       </a>
                     </div>
                   </div>

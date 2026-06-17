@@ -59,3 +59,23 @@ export function getFirstPhone(mobile: string | null, other: string | null): stri
   if (otherCleaned.length > 0) return otherCleaned[0];
   return null;
 }
+
+export function getWhatsappLink(phone: string): string {
+  if (!phone) return "";
+  // Strip all non-numeric characters except maybe leading + which is handled by removing all non-digits
+  let cleaned = phone.replace(/\D/g, "");
+
+  // If it starts with 0 and has 11 digits (e.g. 09582837080), it's likely a 10-digit number with leading 0.
+  // Strip the leading 0.
+  if (cleaned.startsWith("0") && cleaned.length === 11) {
+    cleaned = cleaned.substring(1);
+  }
+
+  // If it is a 10-digit number, prepend '91' (defaulting to India country code)
+  if (cleaned.length === 10) {
+    cleaned = "91" + cleaned;
+  }
+
+  return `https://wa.me/${cleaned}`;
+}
+

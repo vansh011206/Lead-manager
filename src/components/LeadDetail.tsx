@@ -23,7 +23,7 @@ import {
   Sparkles,
 } from "lucide-react";
 import { getStatusColor, getNameColor } from "@/lib/nameToColor";
-import { formatDate, cleanContactInfo, getFirstPhone } from "@/lib/utils";
+import { formatDate, cleanContactInfo, getFirstPhone, getWhatsappLink } from "@/lib/utils";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
@@ -41,6 +41,19 @@ const LinkedinIcon = ({ className, size = 16 }: { className?: string; size?: num
     className={className}
   >
     <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z" />
+  </svg>
+);
+
+const WhatsappIcon = ({ className, size = 16 }: { className?: string; size?: number }) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    viewBox="0 0 24 24"
+    fill="currentColor"
+    width={size}
+    height={size}
+    className={className}
+  >
+    <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946C.062 5.248 5.835 0 12.928 0c3.437.002 6.671 1.34 9.1 3.77 2.43 2.43 3.765 5.666 3.764 9.103-.005 6.965-5.78 12.213-12.871 12.213-.005 0-.01 0-.014 0-2.007-.001-3.98-.513-5.732-1.488L0 24zm6.076-4.542l.363.216c1.714 1.018 3.69 1.554 5.717 1.556 5.89 0 10.684-4.512 10.688-10.058.002-2.686-1.043-5.212-2.943-7.115-1.9-1.9-4.43-2.946-7.118-2.947-5.9 0-10.69 4.515-10.694 10.061-.001 2.032.532 4.02 1.54 5.762l.24.412-1.01 3.694 3.784-.992zm11.286-5.187c-.31-.156-1.839-.907-2.121-1.01-.28-.104-.486-.156-.69.156-.203.312-.787 1.01-.966 1.217-.177.208-.356.233-.666.078-.31-.156-1.307-.48-2.49-1.536-.919-.82-1.54-1.834-1.72-2.145-.18-.313-.018-.482.137-.636.14-.138.31-.363.466-.545.156-.18.208-.31.31-.52.105-.207.052-.39-.026-.546-.078-.156-.69-1.66-.944-2.274-.25-.6-.525-.52-.72-.53l-.612-.01c-.28 0-.738.105-1.124.522-.387.417-1.477 1.442-1.477 3.513 0 2.07 1.51 4.07 1.72 4.35.207.28 2.972 4.538 7.198 6.36 1.005.433 1.79.69 2.4.883 1.01.32 1.93.276 2.658.168.812-.122 2.502-1.023 2.85-2.01.348-.99.348-1.838.244-2.01-.104-.173-.38-.277-.69-.434z" />
   </svg>
 );
 
@@ -194,12 +207,23 @@ export default function LeadDetail({ lead, backUrl, onAction, isLoading, hasNext
               {(() => {
                 const phone = getFirstPhone(lead.contactMobilePhone, lead.contactPhoneNumbers);
                 return phone ? (
-                  <a
-                    href={`tel:${phone}`}
-                    className="text-sm sm:text-base font-bold text-[#0D99FF] hover:text-[#0575E6] transition-colors bg-[#0D99FF]/8 px-3 py-1.5 rounded-lg border border-[#0D99FF]/15"
-                  >
-                    {phone}
-                  </a>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <a
+                      href={`tel:${phone}`}
+                      className="text-sm sm:text-base font-bold text-[#0D99FF] hover:text-[#0575E6] transition-colors bg-[#0D99FF]/8 px-3 py-1.5 rounded-lg border border-[#0D99FF]/15"
+                    >
+                      {phone}
+                    </a>
+                    <a
+                      href={getWhatsappLink(phone)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center space-x-1.5 text-xs sm:text-sm font-bold text-[#25D366] hover:text-[#1ebd59] transition-colors bg-[#25D366]/8 px-3 py-1.5 rounded-lg border border-[#25D366]/15 shadow-sm"
+                    >
+                      <WhatsappIcon size={14} />
+                      <span>WhatsApp</span>
+                    </a>
+                  </div>
                 ) : (
                   <span className="text-sm font-semibold text-slate-400 italic">Not Mentioned</span>
                 );
@@ -293,18 +317,28 @@ export default function LeadDetail({ lead, backUrl, onAction, isLoading, hasNext
                 <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">
                   Mobile Phone
                 </label>
-                <div className="flex flex-wrap gap-2 mt-1">
+                <div className="flex flex-wrap gap-2.5 mt-1">
                   {(() => {
                     const phones = cleanContactInfo(lead.contactMobilePhone);
                     return phones.length > 0 ? (
                       phones.map((phone, idx) => (
-                        <a
-                          key={idx}
-                          href={`tel:${phone}`}
-                          className="inline-flex items-center text-sm font-semibold text-[#0D99FF] hover:text-[#0575E6] bg-[#0D99FF]/8 hover:bg-[#0D99FF]/12 px-3 py-1.5 rounded-lg border border-[#0D99FF]/15 transition-all"
-                        >
-                          {phone}
-                        </a>
+                        <div key={idx} className="flex items-center gap-1.5">
+                          <a
+                            href={`tel:${phone}`}
+                            className="inline-flex items-center text-sm font-semibold text-[#0D99FF] hover:text-[#0575E6] bg-[#0D99FF]/8 hover:bg-[#0D99FF]/12 px-3 py-1.5 rounded-lg border border-[#0D99FF]/15 transition-all"
+                          >
+                            {phone}
+                          </a>
+                          <a
+                            href={getWhatsappLink(phone)}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center justify-center p-2 text-[#25D366] hover:text-[#1ebd59] bg-[#25D366]/8 hover:bg-[#25D366]/12 rounded-lg border border-[#25D366]/15 transition-all shadow-sm"
+                            title="Open in WhatsApp"
+                          >
+                            <WhatsappIcon size={13} />
+                          </a>
+                        </div>
                       ))
                     ) : (
                       <span className="text-sm text-slate-455 italic font-medium">Not Available</span>
@@ -317,18 +351,28 @@ export default function LeadDetail({ lead, backUrl, onAction, isLoading, hasNext
                 <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">
                   Other Phone Numbers
                 </label>
-                <div className="flex flex-wrap gap-2 mt-1">
+                <div className="flex flex-wrap gap-2.5 mt-1">
                   {(() => {
                     const phones = cleanContactInfo(lead.contactPhoneNumbers);
                     return phones.length > 0 ? (
                       phones.map((phone, idx) => (
-                        <a
-                          key={idx}
-                          href={`tel:${phone}`}
-                          className="inline-flex items-center text-sm font-semibold text-[#0D99FF] hover:text-[#0575E6] bg-[#0D99FF]/8 hover:bg-[#0D99FF]/12 px-3 py-1.5 rounded-lg border border-[#0D99FF]/15 transition-all"
-                        >
-                          {phone}
-                        </a>
+                        <div key={idx} className="flex items-center gap-1.5">
+                          <a
+                            href={`tel:${phone}`}
+                            className="inline-flex items-center text-sm font-semibold text-[#0D99FF] hover:text-[#0575E6] bg-[#0D99FF]/8 hover:bg-[#0D99FF]/12 px-3 py-1.5 rounded-lg border border-[#0D99FF]/15 transition-all"
+                          >
+                            {phone}
+                          </a>
+                          <a
+                            href={getWhatsappLink(phone)}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center justify-center p-2 text-[#25D366] hover:text-[#1ebd59] bg-[#25D366]/8 hover:bg-[#25D366]/12 rounded-lg border border-[#25D366]/15 transition-all shadow-sm"
+                            title="Open in WhatsApp"
+                          >
+                            <WhatsappIcon size={13} />
+                          </a>
+                        </div>
                       ))
                     ) : (
                       <span className="text-sm text-slate-455 italic font-medium">Not Available</span>
