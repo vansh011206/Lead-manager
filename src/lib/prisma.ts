@@ -11,6 +11,8 @@ export const prisma =
 
 if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = prisma;
 
-// Start background meeting reminder scheduler
-startReminderScheduler();
+if (typeof window === "undefined" && process.env.NEXT_PHASE !== "phase-production-build") {
+  // Start background meeting reminder scheduler
+  startReminderScheduler();
+}
 
