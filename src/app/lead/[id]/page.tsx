@@ -99,7 +99,7 @@ function LeadDetailPageContent() {
   const nextId = hasNext ? filteredIds[currentIndex + 1] : null;
 
   // Action handler (PUT request to update status and remark)
-  const handleAction = async (status: string, remark?: string) => {
+  const handleAction = async (status: string, remark?: string, reminder?: any) => {
     if (!lead) return;
 
     try {
@@ -108,7 +108,7 @@ function LeadDetailPageContent() {
       const res = await fetch(`/api/leads/${id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status, remark }),
+        body: JSON.stringify({ status, remark, reminder }),
       });
 
       if (!res.ok) {
@@ -118,12 +118,15 @@ function LeadDetailPageContent() {
       await res.json();
       
       // Notify user
-      let message = `Lead marked as ${status}`;
-      if (status === "contacted") message = `Lead marked as contacted`;
-      else if (status === "declined") message = `Lead declined`;
-      else if (status === "remarked") message = `Remark saved for ${lead.prospectFullName}`;
-
-      toast.success(message);
+      if (status === "contacted") {
+        toast.success("Lead marked as contacted");
+      } else if (status === "declined") {
+        toast.error("Lead declined");
+      } else if (status === "remarked") {
+        toast.warning(`Remark saved for ${lead.prospectFullName}`);
+      } else {
+        toast.success(`Lead marked as ${status}`);
+      }
 
       // Trigger sidebar updates in real-time
       await refreshCounts();

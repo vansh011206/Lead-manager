@@ -66,7 +66,7 @@ export function getRecipientEmails(): string[] {
 export async function checkAndSendReminders() {
   try {
     const now = new Date();
-    // 30 minutes from now
+    // 30 minutes from now for standard meetings
     const thirtyMinutesFromNow = new Date(now.getTime() + 30 * 60 * 1000);
     // 1 hour ago (to prevent sending stale reminders if the server was offline)
     const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000);
@@ -86,100 +86,199 @@ export async function checkAndSendReminders() {
 
     if (meetings.length === 0) return;
 
-    console.log(`[Scheduler] Found ${meetings.length} meeting(s) to send 30-min reminders.`);
+    console.log(`[Scheduler] Found ${meetings.length} meeting(s)/reminder(s) in active window.`);
 
     for (const meeting of meetings) {
-      const recipients = getRecipientEmails();
-      
-      const formattedDate = new Date(meeting.scheduledAt).toLocaleString("en-US", {
-        weekday: "long",
-        year: "numeric",
-        month: "long",
-        day: "numeric",
-        hour: "2-digit",
-        minute: "2-digit",
-        timeZone: "Asia/Kolkata",
-      }) + " (IST)";
+      const scheduledTime = new Date(meeting.scheduledAt).getTime();
+      const nowTime = now.getTime();
 
-      const subject = `⚠️ Reminder: Meeting "${meeting.title}" starting in 30 minutes!`;
-      
-      const html = `
-        <div style="font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; border: 1px solid #e2e8f0; border-radius: 20px; background-color: #ffffff; color: #1e293b; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);">
-          <div style="margin-bottom: 20px;">
-            <span style="background-color: #fef3c7; border: 1px solid #fde68a; color: #d97706; font-size: 10px; font-weight: 850; text-transform: uppercase; letter-spacing: 0.05em; padding: 6px 12px; border-radius: 9999px; display: inline-block;">
-              30-Minute Reminder
-            </span>
-          </div>
-          
-          <h2 style="font-size: 20px; font-weight: 800; color: #0f172a; margin: 0 0 12px 0; line-height: 1.25;">
-            Your meeting with <span style="color: #0D99FF;">${meeting.lead.prospectFullName}</span> is starting soon
-          </h2>
-          
-          <p style="font-size: 14px; line-height: 1.5; color: #64748b; margin: 0 0 24px 0;">
-            This is a reminder that your scheduled meeting is starting in 30 minutes. Here are the meeting details:
-          </p>
+      // Case A: This is a custom Call Reminder (10 minutes before)
+      if (meeting.recipientEmail) {
+        const tenMinWindow = scheduledTime - 10 * 60 * 1000;
+        if (nowTime < tenMinWindow) {
+          // Too early to send this 10-min callback reminder
+          continue;
+        }
 
-          <div style="background-color: #f8fafc; border: 1px solid #f1f5f9; border-radius: 14px; padding: 16px; margin-bottom: 24px;">
-            <div style="margin-bottom: 12px;">
-              <span style="font-size: 10px; font-weight: 800; color: #94a3b8; text-transform: uppercase; display: block; margin-bottom: 2px; letter-spacing: 0.05em;">Meeting Title</span>
-              <span style="font-size: 14px; font-weight: 700; color: #0f172a;">${meeting.title}</span>
+        console.log(`[Scheduler] Sending 10-minute callback reminder to ${meeting.recipientEmail} for lead ${meeting.lead.prospectFullName}`);
+
+        const recipients = [meeting.recipientEmail];
+        
+        const formattedDate = new Date(meeting.scheduledAt).toLocaleString("en-US", {
+          weekday: "long",
+          year: "numeric",
+          month: "long",
+          day: "numeric",
+          hour: "2-digit",
+          minute: "2-digit",
+          timeZone: "Asia/Kolkata",
+        }) + " (IST)";
+
+        const subject = `⚠️ Call Reminder: Lead "${meeting.lead.prospectFullName}" callback scheduled!`;
+        
+        const html = `
+          <div style="font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; border: 1px solid #e2e8f0; border-radius: 20px; background-color: #ffffff; color: #1e293b; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);">
+            <div style="margin-bottom: 20px;">
+              <span style="background-color: #fef3c7; border: 1px solid #fde68a; color: #d97706; font-size: 10px; font-weight: 850; text-transform: uppercase; letter-spacing: 0.05em; padding: 6px 12px; border-radius: 9999px; display: inline-block;">
+                Call Reminder
+              </span>
             </div>
-            <div style="margin-bottom: 12px;">
-              <span style="font-size: 10px; font-weight: 800; color: #94a3b8; text-transform: uppercase; display: block; margin-bottom: 2px; letter-spacing: 0.05em;">Scheduled Time</span>
-              <span style="font-size: 14px; font-weight: 700; color: #0f172a;">${formattedDate}</span>
+            
+            <h2 style="font-size: 20px; font-weight: 800; color: #0f172a; margin: 0 0 12px 0; line-height: 1.25;">
+              Callback scheduled with <span style="color: #0D99FF;">${meeting.lead.prospectFullName}</span> in 10 minutes
+            </h2>
+            
+            <p style="font-size: 14px; line-height: 1.5; color: #64748b; margin: 0 0 24px 0;">
+              This is a reminder that you scheduled a callback reminder for this prospect. Here are the callback details:
+            </p>
+
+            <div style="background-color: #f8fafc; border: 1px solid #f1f5f9; border-radius: 14px; padding: 16px; margin-bottom: 24px;">
+              <div style="margin-bottom: 12px;">
+                <span style="font-size: 10px; font-weight: 855; color: #94a3b8; text-transform: uppercase; display: block; margin-bottom: 2px; letter-spacing: 0.05em;">Scheduled Callback Time</span>
+                <span style="font-size: 14px; font-weight: 700; color: #0f172a;">${formattedDate}</span>
+              </div>
+              <div>
+                <span style="font-size: 10px; font-weight: 855; color: #94a3b8; text-transform: uppercase; display: block; margin-bottom: 2px; letter-spacing: 0.05em;">Remark / Note</span>
+                <span style="font-size: 13px; font-weight: 500; color: #334155; white-space: pre-wrap;">${meeting.agenda}</span>
+              </div>
             </div>
-            ${meeting.agenda ? `
-            <div>
-              <span style="font-size: 10px; font-weight: 800; color: #94a3b8; text-transform: uppercase; display: block; margin-bottom: 2px; letter-spacing: 0.05em;">Agenda / Notes</span>
-              <span style="font-size: 13px; font-weight: 500; color: #334155; white-space: pre-wrap;">${meeting.agenda}</span>
+
+            <h3 style="font-size: 11px; font-weight: 800; color: #64748b; text-transform: uppercase; margin: 0 0 12px 0; letter-spacing: 0.05em; border-bottom: 1px solid #f1f5f9; padding-bottom: 6px;">Lead Information</h3>
+            <table style="width: 100%; border-collapse: collapse; margin-bottom: 24px; font-size: 13px;">
+              <tr style="border-bottom: 1px solid #f1f5f9;">
+                <td style="padding: 8px 0; color: #64748b; font-weight: 500; width: 35%;">Full Name</td>
+                <td style="padding: 8px 0; color: #0f172a; font-weight: 750;">${meeting.lead.prospectFullName}</td>
+              </tr>
+              ${meeting.lead.businessName ? `
+              <tr style="border-bottom: 1px solid #f1f5f9;">
+                <td style="padding: 8px 0; color: #64748b; font-weight: 500;">Company</td>
+                <td style="padding: 8px 0; color: #0f172a; font-weight: 600;">${meeting.lead.businessName}</td>
+              </tr>
+              ` : ""}
+              ${meeting.lead.contactMobilePhone || meeting.lead.contactPhoneNumbers ? `
+              <tr style="border-bottom: 1px solid #f1f5f9;">
+                <td style="padding: 8px 0; color: #64748b; font-weight: 500;">Phone</td>
+                <td style="padding: 8px 0; color: #0f172a; font-weight: 600;">${meeting.lead.contactMobilePhone || meeting.lead.contactPhoneNumbers}</td>
+              </tr>
+              ` : ""}
+            </table>
+
+            <div style="border-top: 1px solid #f1f5f9; padding-top: 16px; text-align: center;">
+              <p style="font-size: 11px; color: #94a3b8; margin: 0;">Lead Manager App &bull; Call Reminder Service</p>
             </div>
-            ` : ""}
           </div>
+        `;
 
-          <h3 style="font-size: 11px; font-weight: 800; color: #64748b; text-transform: uppercase; margin: 0 0 12px 0; letter-spacing: 0.05em; border-bottom: 1px solid #f1f5f9; padding-bottom: 6px;">Lead Information</h3>
-          <table style="width: 100%; border-collapse: collapse; margin-bottom: 24px; font-size: 13px;">
-            <tr style="border-bottom: 1px solid #f1f5f9;">
-              <td style="padding: 8px 0; color: #64748b; font-weight: 500; width: 35%;">Full Name</td>
-              <td style="padding: 8px 0; color: #0f172a; font-weight: 750;">${meeting.lead.prospectFullName}</td>
-            </tr>
-            ${meeting.lead.businessName ? `
-            <tr style="border-bottom: 1px solid #f1f5f9;">
-              <td style="padding: 8px 0; color: #64748b; font-weight: 500;">Company</td>
-              <td style="padding: 8px 0; color: #0f172a; font-weight: 600;">${meeting.lead.businessName}</td>
-            </tr>
-            ` : ""}
-            ${meeting.lead.prospectJobTitle ? `
-            <tr style="border-bottom: 1px solid #f1f5f9;">
-              <td style="padding: 8px 0; color: #64748b; font-weight: 500;">Job Title</td>
-              <td style="padding: 8px 0; color: #0f172a; font-weight: 500;">${meeting.lead.prospectJobTitle}</td>
-            </tr>
-            ` : ""}
-            ${meeting.lead.contactProfessionalEmail ? `
-            <tr style="border-bottom: 1px solid #f1f5f9;">
-              <td style="padding: 8px 0; color: #64748b; font-weight: 500;">Email</td>
-              <td style="padding: 8px 0; color: #0D99FF; font-weight: 600;"><a href="mailto:${meeting.lead.contactProfessionalEmail}" style="color: #0D99FF; text-decoration: none;">${meeting.lead.contactProfessionalEmail}</a></td>
-            </tr>
-            ` : ""}
-            ${meeting.lead.contactMobilePhone || meeting.lead.contactPhoneNumbers ? `
-            <tr style="border-bottom: 1px solid #f1f5f9;">
-              <td style="padding: 8px 0; color: #64748b; font-weight: 500;">Phone</td>
-              <td style="padding: 8px 0; color: #0f172a; font-weight: 600;">${meeting.lead.contactMobilePhone || meeting.lead.contactPhoneNumbers}</td>
-            </tr>
-            ` : ""}
-          </table>
+        const success = await sendEmail({ to: recipients, subject, html });
+        if (success) {
+          await prisma.meeting.update({
+            where: { id: meeting.id },
+            data: { reminderSent: true },
+          });
+        }
 
-          <div style="border-top: 1px solid #f1f5f9; padding-top: 16px; text-align: center;">
-            <p style="font-size: 11px; color: #94a3b8; margin: 0;">Lead Manager App &bull; Auto-reminder Scheduler</p>
+      } else {
+        // Case B: This is a standard meeting reminder (30 minutes before)
+        const thirtyMinWindow = scheduledTime - 30 * 60 * 1000;
+        if (nowTime < thirtyMinWindow) {
+          // Too early to send standard 30-min reminder
+          continue;
+        }
+
+        console.log(`[Scheduler] Sending standard 30-minute reminder for meeting: ${meeting.title}`);
+
+        const recipients = getRecipientEmails();
+        
+        const formattedDate = new Date(meeting.scheduledAt).toLocaleString("en-US", {
+          weekday: "long",
+          year: "numeric",
+          month: "long",
+          day: "numeric",
+          hour: "2-digit",
+          minute: "2-digit",
+          timeZone: "Asia/Kolkata",
+        }) + " (IST)";
+
+        const subject = `⚠️ Reminder: Meeting "${meeting.title}" starting in 30 minutes!`;
+        
+        const html = `
+          <div style="font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; border: 1px solid #e2e8f0; border-radius: 20px; background-color: #ffffff; color: #1e293b; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);">
+            <div style="margin-bottom: 20px;">
+              <span style="background-color: #fef3c7; border: 1px solid #fde68a; color: #d97706; font-size: 10px; font-weight: 850; text-transform: uppercase; letter-spacing: 0.05em; padding: 6px 12px; border-radius: 9999px; display: inline-block;">
+                30-Minute Reminder
+              </span>
+            </div>
+            
+            <h2 style="font-size: 20px; font-weight: 800; color: #0f172a; margin: 0 0 12px 0; line-height: 1.25;">
+              Your meeting with <span style="color: #0D99FF;">${meeting.lead.prospectFullName}</span> is starting soon
+            </h2>
+            
+            <p style="font-size: 14px; line-height: 1.5; color: #64748b; margin: 0 0 24px 0;">
+              This is a reminder that your scheduled meeting is starting in 30 minutes. Here are the meeting details:
+            </p>
+
+            <div style="background-color: #f8fafc; border: 1px solid #f1f5f9; border-radius: 14px; padding: 16px; margin-bottom: 24px;">
+              <div style="margin-bottom: 12px;">
+                <span style="font-size: 10px; font-weight: 800; color: #94a3b8; text-transform: uppercase; display: block; margin-bottom: 2px; letter-spacing: 0.05em;">Meeting Title</span>
+                <span style="font-size: 14px; font-weight: 700; color: #0f172a;">${meeting.title}</span>
+              </div>
+              <div style="margin-bottom: 12px;">
+                <span style="font-size: 10px; font-weight: 800; color: #94a3b8; text-transform: uppercase; display: block; margin-bottom: 2px; letter-spacing: 0.05em;">Scheduled Time</span>
+                <span style="font-size: 14px; font-weight: 700; color: #0f172a;">${formattedDate}</span>
+              </div>
+              ${meeting.agenda ? `
+              <div>
+                <span style="font-size: 10px; font-weight: 800; color: #94a3b8; text-transform: uppercase; display: block; margin-bottom: 2px; letter-spacing: 0.05em;">Agenda / Notes</span>
+                <span style="font-size: 13px; font-weight: 500; color: #334155; white-space: pre-wrap;">${meeting.agenda}</span>
+              </div>
+              ` : ""}
+            </div>
+
+            <h3 style="font-size: 11px; font-weight: 800; color: #64748b; text-transform: uppercase; margin: 0 0 12px 0; letter-spacing: 0.05em; border-bottom: 1px solid #f1f5f9; padding-bottom: 6px;">Lead Information</h3>
+            <table style="width: 100%; border-collapse: collapse; margin-bottom: 24px; font-size: 13px;">
+              <tr style="border-bottom: 1px solid #f1f5f9;">
+                <td style="padding: 8px 0; color: #64748b; font-weight: 500; width: 35%;">Full Name</td>
+                <td style="padding: 8px 0; color: #0f172a; font-weight: 750;">${meeting.lead.prospectFullName}</td>
+              </tr>
+              ${meeting.lead.businessName ? `
+              <tr style="border-bottom: 1px solid #f1f5f9;">
+                <td style="padding: 8px 0; color: #64748b; font-weight: 500;">Company</td>
+                <td style="padding: 8px 0; color: #0f172a; font-weight: 600;">${meeting.lead.businessName}</td>
+              </tr>
+              ` : ""}
+              ${meeting.lead.prospectJobTitle ? `
+              <tr style="border-bottom: 1px solid #f1f5f9;">
+                <td style="padding: 8px 0; color: #64748b; font-weight: 500;">Job Title</td>
+                <td style="padding: 8px 0; color: #0f172a; font-weight: 500;">${meeting.lead.prospectJobTitle}</td>
+              </tr>
+              ` : ""}
+              ${meeting.lead.contactProfessionalEmail ? `
+              <tr style="border-bottom: 1px solid #f1f5f9;">
+                <td style="padding: 8px 0; color: #64748b; font-weight: 500;">Email</td>
+                <td style="padding: 8px 0; color: #0D99FF; font-weight: 600;"><a href="mailto:${meeting.lead.contactProfessionalEmail}" style="color: #0D99FF; text-decoration: none;">${meeting.lead.contactProfessionalEmail}</a></td>
+              </tr>
+              ` : ""}
+              ${meeting.lead.contactMobilePhone || meeting.lead.contactPhoneNumbers ? `
+              <tr style="border-bottom: 1px solid #f1f5f9;">
+                <td style="padding: 8px 0; color: #64748b; font-weight: 500;">Phone</td>
+                <td style="padding: 8px 0; color: #0f172a; font-weight: 600;">${meeting.lead.contactMobilePhone || meeting.lead.contactPhoneNumbers}</td>
+              </tr>
+              ` : ""}
+            </table>
+
+            <div style="border-top: 1px solid #f1f5f9; padding-top: 16px; text-align: center;">
+              <p style="font-size: 11px; color: #94a3b8; margin: 0;">Lead Manager App &bull; Auto-reminder Scheduler</p>
+            </div>
           </div>
-        </div>
-      `;
+        `;
 
-      const success = await sendEmail({ to: recipients, subject, html });
-      if (success) {
-        await prisma.meeting.update({
-          where: { id: meeting.id },
-          data: { reminderSent: true },
-        });
+        const success = await sendEmail({ to: recipients, subject, html });
+        if (success) {
+          await prisma.meeting.update({
+            where: { id: meeting.id },
+            data: { reminderSent: true },
+          });
+        }
       }
     }
   } catch (error) {

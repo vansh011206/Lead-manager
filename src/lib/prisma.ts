@@ -1,4 +1,4 @@
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient } from "@/generated/client";
 import { startReminderScheduler } from "./scheduler";
 
 const globalForPrisma = global as unknown as { prisma: PrismaClient };

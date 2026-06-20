@@ -7,6 +7,7 @@ import { getNameColor, getNameInitials, getStatusColor } from "@/lib/nameToColor
 import { cn, formatDate, cleanContactInfo, getWhatsappLink } from "@/lib/utils";
 import { toast } from "sonner";
 import ScheduleMeetingModal from "@/components/ScheduleMeetingModal";
+import ContactRemarkModal from "@/components/ContactRemarkModal";
 
 const LinkedinIcon = ({ className, size = 16 }: { className?: string; size?: number }) => (
   <svg
@@ -73,6 +74,7 @@ export default function LeadsTable({ leads, filterParams = "", onRefresh }: Lead
   const [hoveredLead, setHoveredLead] = useState<Lead | null>(null);
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
   const [selectedLeadForMeeting, setSelectedLeadForMeeting] = useState<Lead | null>(null);
+  const [selectedLeadForFollowUp, setSelectedLeadForFollowUp] = useState<Lead | null>(null);
   const [selectedLeadIds, setSelectedLeadIds] = useState<string[]>([]);
 
   const handleSelectLead = (id: string) => {
@@ -126,6 +128,35 @@ export default function LeadsTable({ leads, filterParams = "", onRefresh }: Lead
     const remark = window.prompt("Enter remark for selected leads:");
     if (remark === null) return; // cancelled
     await handleBulkStatusChange("remarked", remark);
+  };
+
+  const handleBulkContacted = async () => {
+    const remark = window.prompt("Enter remark for selected contacted leads (optional):", "Marked contacted");
+    if (remark === null) return; // cancelled
+    await handleBulkStatusChange("contacted", remark || "Marked contacted");
+  };
+
+  const handleSaveRemark = async (leadId: string, remarkText: string, reminder?: any) => {
+    try {
+      const res = await fetch(`/api/leads/${leadId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          remark: remarkText,
+          reminder,
+        }),
+      });
+
+      if (!res.ok) {
+        throw new Error("Failed to save remark");
+      }
+
+      toast.success("Remark saved successfully");
+      onRefresh();
+    } catch (err: any) {
+      console.error("Save remark error:", err);
+      toast.error(err.message || "Failed to save remark");
+    }
   };
 
   const handleBulkDelete = async () => {
@@ -507,7 +538,12 @@ export default function LeadsTable({ leads, filterParams = "", onRefresh }: Lead
                         <tr
                           key={lead.id}
                           onClick={() => router.push(`/lead/${lead.id}${filterParams ? `?${filterParams}` : ""}`)}
-                          onMouseEnter={() => (lead.remark || (lead.meetings && lead.meetings.length > 0)) && setHoveredLead(lead)}
+                          onMouseEnter={() => {
+                            const futureMeetings = lead.meetings?.filter(m => new Date(m.scheduledAt) > new Date()) || [];
+                            if (lead.remark || futureMeetings.length > 0) {
+                              setHoveredLead(lead);
+                            }
+                          }}
                           onMouseMove={(e) => setMousePos({ x: e.clientX, y: e.clientY })}
                           onMouseLeave={() => setHoveredLead(null)}
                           className="hover:bg-slate-50/70 transition-colors cursor-pointer group"
@@ -673,24 +709,43 @@ export default function LeadsTable({ leads, filterParams = "", onRefresh }: Lead
                             <div className="flex items-center justify-end space-x-2">
                               {/* Schedule / Scheduled Meeting */}
                               {lead.status === "contacted" && (() => {
-                                const hasMeeting = lead.meetings && lead.meetings.length > 0;
+                                const futureMeetings = lead.meetings?.filter(m => new Date(m.scheduledAt) > new Date()) || [];
+                                const hasMeeting = futureMeetings.length > 0;
                                 return (
-                                  <button
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      setSelectedLeadForMeeting(lead);
-                                    }}
-                                    className={cn(
-                                      "px-2.5 py-1.5 rounded-xl border transition-all shadow-sm flex items-center gap-1 text-[10px] font-extrabold shrink-0",
-                                      hasMeeting
-                                        ? "border-slate-200 bg-slate-50 text-slate-450 hover:bg-slate-100 hover:text-slate-655"
-                                        : "border-emerald-200 bg-emerald-50 hover:bg-emerald-100 text-emerald-650 hover:text-emerald-700"
-                                    )}
-                                    title={hasMeeting ? "View or Reschedule Meeting" : "Schedule Meeting"}
-                                  >
-                                    <Calendar size={12} />
-                                    <span>{hasMeeting ? "Scheduled" : "Schedule"}</span>
-                                  </button>
+                                  <>
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setSelectedLeadForMeeting(lead);
+                                      }}
+                                      className={cn(
+                                        "px-2.5 py-1.5 rounded-xl border transition-all shadow-sm flex items-center gap-1 text-[10px] font-extrabold shrink-0",
+                                        hasMeeting
+                                          ? "border-slate-200 bg-slate-50 text-slate-450 hover:bg-slate-100 hover:text-slate-655"
+                                          : "border-emerald-200 bg-emerald-50 hover:bg-emerald-100 text-emerald-650 hover:text-emerald-700"
+                                      )}
+                                      title={hasMeeting ? "View or Reschedule Meeting" : "Schedule Meeting"}
+                                    >
+                                      <Calendar size={12} />
+                                      <span>{hasMeeting ? "Scheduled" : "Schedule"}</span>
+                                    </button>
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setSelectedLeadForFollowUp(lead);
+                                      }}
+                                      className={cn(
+                                        "px-2.5 py-1.5 rounded-xl border transition-all shadow-sm flex items-center gap-1 text-[10px] font-extrabold shrink-0",
+                                        lead.remark
+                                          ? "border-amber-200 bg-amber-50 hover:bg-amber-100 text-amber-700 hover:text-amber-800"
+                                          : "border-slate-200 bg-white hover:bg-amber-50 hover:border-amber-200 hover:text-amber-700 text-slate-500"
+                                      )}
+                                      title={lead.remark ? "Edit Follow-up Note" : "Add Follow-up Note"}
+                                    >
+                                      <MessageSquare size={12} />
+                                      <span>{lead.remark ? "Followed up" : "Follow-up"}</span>
+                                    </button>
+                                  </>
                                 );
                               })()}
 
@@ -742,70 +797,81 @@ export default function LeadsTable({ leads, filterParams = "", onRefresh }: Lead
       })}
 
       {/* Floating Tooltip (Remark & Meeting Info) */}
-      {hoveredLead && (hoveredLead.remark || (hoveredLead.meetings && hoveredLead.meetings.length > 0)) && (
-        <div
-          className="fixed z-50 bg-white text-slate-800 p-5 rounded-2xl border border-slate-200/90 shadow-[0_16px_48px_rgba(15,23,42,0.12)] max-w-sm w-[340px] pointer-events-none text-xs flex flex-col space-y-3.5 transition-all duration-75 animate-fade-in"
-          style={{
-            left: `${mousePos.x + 15}px`,
-            top: `${mousePos.y + 15}px`,
-          }}
-        >
-          {/* Remark section */}
-          {hoveredLead.remark && (
-            <div className="flex flex-col space-y-1.5">
-              <div className="font-extrabold text-amber-650 uppercase tracking-wider text-[10px] flex items-center space-x-1.5">
-                <MessageSquare size={12} className="text-amber-500 shrink-0" />
-                <span>Remark for {hoveredLead.prospectFullName}</span>
-              </div>
-              <div className="text-slate-700 leading-relaxed font-bold italic text-[13px]">
-                "{hoveredLead.remark}"
-              </div>
-            </div>
-          )}
+      {hoveredLead && (() => {
+        const futureMeetings = hoveredLead.meetings?.filter(
+          (m) => new Date(m.scheduledAt) > new Date()
+        ) || [];
+        const hasVisibleContent = !!hoveredLead.remark || futureMeetings.length > 0;
+        if (!hasVisibleContent) return null;
 
-          {/* Divider if both exist */}
-          {hoveredLead.remark && hoveredLead.meetings && hoveredLead.meetings.length > 0 && (
-            <div className="border-t border-slate-100 my-1" />
-          )}
-
-          {/* Meeting section */}
-          {hoveredLead.meetings && hoveredLead.meetings.length > 0 && (() => {
-            const meeting = hoveredLead.meetings[hoveredLead.meetings.length - 1];
-            const formattedDate = new Date(meeting.scheduledAt).toLocaleString("en-US", {
-              weekday: "short",
-              month: "short",
-              day: "numeric",
-              hour: "2-digit",
-              minute: "2-digit",
-            });
-            return (
-              <div className="flex flex-col space-y-2">
-                <div className="font-extrabold text-emerald-650 uppercase tracking-wider text-[10px] flex items-center space-x-1.5">
-                  <Calendar size={12} className="text-emerald-500 shrink-0" />
-                  <span>Scheduled Meeting</span>
+        const isLowerHalf = typeof window !== "undefined" && mousePos.y > Math.max(window.innerHeight / 2, window.innerHeight - 350);
+        const isRightHalf = typeof window !== "undefined" && mousePos.x > window.innerWidth - 360;
+        return (
+          <div
+            className="fixed z-50 bg-white text-slate-800 p-5 rounded-2xl border border-slate-200/90 shadow-[0_16px_48px_rgba(15,23,42,0.12)] max-w-sm w-[340px] pointer-events-none text-xs flex flex-col space-y-3.5 transition-all duration-75 animate-fade-in"
+            style={{
+              left: `${mousePos.x + (isRightHalf ? -15 : 15)}px`,
+              top: `${mousePos.y + (isLowerHalf ? -15 : 15)}px`,
+              transform: `${isRightHalf ? "translateX(-100%)" : ""} ${isLowerHalf ? "translateY(-100%)" : ""}`.trim() || undefined,
+            }}
+          >
+            {/* Remark section */}
+            {hoveredLead.remark && (
+              <div className="flex flex-col space-y-1.5">
+                <div className="font-extrabold text-amber-650 uppercase tracking-wider text-[10px] flex items-center space-x-1.5">
+                  <MessageSquare size={12} className="text-amber-500 shrink-0" />
+                  <span>Remark for {hoveredLead.prospectFullName}</span>
                 </div>
-                <div className="bg-emerald-50/60 border border-emerald-100 rounded-xl p-3 flex flex-col space-y-1.5 text-slate-750">
-                  <div className="font-extrabold text-slate-800 text-[12px] leading-snug">{meeting.title}</div>
-                  <div className="flex items-center text-emerald-700 text-[11px] gap-1 font-bold">
-                    <Clock size={11} className="text-emerald-500" />
-                    <span>{formattedDate}</span>
+                <div className="text-slate-700 leading-relaxed font-bold italic text-[13px]">
+                  "{hoveredLead.remark}"
+                </div>
+              </div>
+            )}
+
+            {/* Divider if both exist */}
+            {hoveredLead.remark && futureMeetings.length > 0 && (
+              <div className="border-t border-slate-100 my-1" />
+            )}
+
+            {/* Meeting section */}
+            {futureMeetings.length > 0 && (() => {
+              const meeting = futureMeetings[futureMeetings.length - 1];
+              const formattedDate = new Date(meeting.scheduledAt).toLocaleString("en-US", {
+                weekday: "short",
+                month: "short",
+                day: "numeric",
+                hour: "2-digit",
+                minute: "2-digit",
+              });
+              return (
+                <div className="flex flex-col space-y-2">
+                  <div className="font-extrabold text-emerald-650 uppercase tracking-wider text-[10px] flex items-center space-x-1.5">
+                    <Calendar size={12} className="text-emerald-500 shrink-0" />
+                    <span>Scheduled Meeting</span>
                   </div>
-                  {meeting.agenda && (
-                    <div className="text-slate-500 font-medium italic text-[11px] mt-0.5 line-clamp-2 leading-relaxed">
-                      "{meeting.agenda}"
+                  <div className="bg-emerald-50/60 border border-emerald-100 rounded-xl p-3 flex flex-col space-y-1.5 text-slate-750">
+                    <div className="font-extrabold text-slate-800 text-[12px] leading-snug">{meeting.title}</div>
+                    <div className="flex items-center text-emerald-700 text-[11px] gap-1 font-bold">
+                      <Clock size={11} className="text-emerald-500" />
+                      <span>{formattedDate}</span>
                     </div>
-                  )}
+                    {meeting.agenda && (
+                      <div className="text-slate-500 font-medium italic text-[11px] mt-0.5 line-clamp-2 leading-relaxed">
+                        "{meeting.agenda}"
+                      </div>
+                    )}
+                  </div>
                 </div>
-              </div>
-            );
-          })()}
+              );
+            })()}
 
-          {/* Footer date */}
-          <div className="text-[10px] text-slate-400 font-semibold pt-2 border-t border-slate-100">
-            Last updated: {formatDate(hoveredLead.updatedAt)}
+            {/* Footer date */}
+            <div className="text-[10px] text-slate-400 font-semibold pt-2 border-t border-slate-100">
+              Last updated: {formatDate(hoveredLead.updatedAt)}
+            </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
 
       {/* Bulk Actions Panel */}
       {selectedLeadIds.length > 0 && (
@@ -831,7 +897,7 @@ export default function LeadsTable({ leads, filterParams = "", onRefresh }: Lead
                 <div className="absolute bottom-full right-0 mb-2 w-36 bg-white border border-slate-200 shadow-2xl rounded-xl p-1 space-y-0.5 z-50 hidden group-hover:block">
                   <button
                     type="button"
-                    onClick={() => handleBulkStatusChange("contacted")}
+                    onClick={handleBulkContacted}
                     className="w-full text-left px-2.5 py-2 hover:bg-emerald-50 rounded-lg text-[10px] font-extrabold text-emerald-600 uppercase tracking-wider"
                   >
                     Contacted
@@ -882,6 +948,19 @@ export default function LeadsTable({ leads, filterParams = "", onRefresh }: Lead
         onClose={() => setSelectedLeadForMeeting(null)}
         lead={selectedLeadForMeeting}
         onSuccess={onRefresh}
+      />
+
+      {/* Follow-up Note Modal */}
+      <ContactRemarkModal
+        isOpen={!!selectedLeadForFollowUp}
+        onClose={() => setSelectedLeadForFollowUp(null)}
+        leadName={selectedLeadForFollowUp?.prospectFullName || ""}
+        onSave={async (remarkText) => {
+          if (!selectedLeadForFollowUp) return;
+          const leadId = selectedLeadForFollowUp.id;
+          setSelectedLeadForFollowUp(null);
+          await handleSaveRemark(leadId, remarkText);
+        }}
       />
     </div>
   );

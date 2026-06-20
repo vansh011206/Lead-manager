@@ -79,3 +79,30 @@ export function getWhatsappLink(phone: string): string {
   return `https://wa.me/${cleaned}`;
 }
 
+export function getPhoneRegexPatterns(query: string): string[] {
+  const digits = query.replace(/\D/g, "");
+  if (!digits) return [];
+
+  const patterns = new Set<string>();
+
+  const buildPattern = (seq: string) => {
+    return seq.split("").join("\\D*");
+  };
+
+  patterns.add(buildPattern(digits));
+
+  if (digits.startsWith("0") && digits.length > 1) {
+    patterns.add(buildPattern(digits.substring(1)));
+  }
+
+  if (digits.startsWith("91") && digits.length >= 11) {
+    patterns.add(buildPattern(digits.substring(2)));
+  }
+
+  if (digits.length >= 10) {
+    patterns.add(buildPattern(digits.slice(-10)));
+  }
+
+  return Array.from(patterns);
+}
+

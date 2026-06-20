@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Lead, UploadBatch } from "@prisma/client";
+import { Lead, UploadBatch } from "@/generated/client";
 import {
   Briefcase,
   Mail,
@@ -28,6 +28,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import RemarkModal from "@/components/RemarkModal";
+import ContactRemarkModal from "@/components/ContactRemarkModal";
 import CallScriptModal from "@/components/CallScriptModal";
 import { toast } from "sonner";
 
@@ -60,7 +61,7 @@ const WhatsappIcon = ({ className, size = 16 }: { className?: string; size?: num
 interface LeadDetailProps {
   lead: Lead & { uploadBatch: UploadBatch | null; meetings?: any[] };
   backUrl: string;
-  onAction: (status: string, remark?: string) => Promise<void>;
+  onAction: (status: string, remark?: string, reminder?: any) => Promise<void>;
   isLoading: boolean;
   hasNext: boolean;
 }
@@ -70,6 +71,7 @@ export default function LeadDetail({ lead, backUrl, onAction, isLoading, hasNext
   const [isRemarkOpen, setRemarkOpen] = useState(false);
   const [isScriptOpen, setScriptOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [remarkTargetStatus, setRemarkTargetStatus] = useState<"remarked" | "contacted">("remarked");
   const statusStyle = getStatusColor(lead.status);
   const nameGradient = getNameColor(lead.prospectFullName);
 
@@ -99,8 +101,8 @@ export default function LeadDetail({ lead, backUrl, onAction, isLoading, hasNext
     return `https://${trimmed}`;
   };
 
-  const handleStatusChange = async (status: string, remark?: string) => {
-    await onAction(status, remark);
+  const handleStatusChange = async (status: string, remark?: string, reminder?: any) => {
+    await onAction(status, remark, reminder);
   };
 
   const handleDelete = async () => {
@@ -614,7 +616,10 @@ export default function LeadDetail({ lead, backUrl, onAction, isLoading, hasNext
 
             {/* Remark button */}
             <button
-              onClick={() => setRemarkOpen(true)}
+              onClick={() => {
+                setRemarkTargetStatus("remarked");
+                setRemarkOpen(true);
+              }}
               disabled={isLoading}
               className="flex-1 sm:flex-initial flex items-center justify-center space-x-1 sm:space-x-2 px-2.5 sm:px-5 py-2.5 sm:py-3 rounded-xl border border-amber-200 bg-amber-50 hover:bg-amber-600 hover:border-amber-600 text-amber-700 hover:text-white text-[10px] sm:text-xs md:text-sm font-bold uppercase tracking-wider transition-all duration-250 shadow-sm disabled:opacity-50"
             >
@@ -622,30 +627,60 @@ export default function LeadDetail({ lead, backUrl, onAction, isLoading, hasNext
               <span>Remark</span>
             </button>
 
-            {/* Contacted button */}
-            <button
-              onClick={() => handleStatusChange("contacted")}
-              disabled={isLoading}
-              className="flex-1 sm:flex-initial flex items-center justify-center space-x-1 sm:space-x-2 px-3 sm:px-6 py-2.5 sm:py-3 rounded-xl bg-[#10B981] border border-emerald-500 hover:bg-emerald-600 hover:border-emerald-600 text-white text-[10px] sm:text-xs md:text-sm font-extrabold uppercase tracking-widest transition-all duration-250 shadow-sm disabled:opacity-50"
-            >
-              <Check size={14} className="shrink-0 sm:w-4 sm:h-4" />
-              <span className="hidden sm:inline">Mark </span><span>Contacted</span>
-              {hasNext && <ChevronRight size={12} className="ml-0.5 shrink-0 sm:w-3.5 sm:h-3.5" />}
-            </button>
+            {/* Contacted / Follow-up button */}
+            {lead.status === "contacted" ? (
+              <button
+                onClick={() => {
+                  setRemarkTargetStatus("contacted");
+                  setRemarkOpen(true);
+                }}
+                disabled={isLoading}
+                className="flex-1 sm:flex-initial flex items-center justify-center space-x-1 sm:space-x-2 px-3 sm:px-6 py-2.5 sm:py-3 rounded-xl bg-emerald-600 border border-emerald-500 hover:bg-emerald-700 hover:border-emerald-700 text-white text-[10px] sm:text-xs md:text-sm font-extrabold uppercase tracking-widest transition-all duration-250 shadow-sm disabled:opacity-50"
+              >
+                <MessageSquare size={14} className="shrink-0 sm:w-4 sm:h-4" />
+                <span>Follow-up</span>
+                {hasNext && <ChevronRight size={12} className="ml-0.5 shrink-0 sm:w-3.5 sm:h-3.5" />}
+              </button>
+            ) : (
+              <button
+                onClick={() => {
+                  setRemarkTargetStatus("contacted");
+                  setRemarkOpen(true);
+                }}
+                disabled={isLoading}
+                className="flex-1 sm:flex-initial flex items-center justify-center space-x-1 sm:space-x-2 px-3 sm:px-6 py-2.5 sm:py-3 rounded-xl bg-[#10B981] border border-emerald-500 hover:bg-emerald-600 hover:border-emerald-600 text-white text-[10px] sm:text-xs md:text-sm font-extrabold uppercase tracking-widest transition-all duration-250 shadow-sm disabled:opacity-50"
+              >
+                <Check size={14} className="shrink-0 sm:w-4 sm:h-4" />
+                <span className="hidden sm:inline">Mark </span><span>Contacted</span>
+                {hasNext && <ChevronRight size={12} className="ml-0.5 shrink-0 sm:w-3.5 sm:h-3.5" />}
+              </button>
+            )}
           </div>
         </div>
       </div>
 
       {/* Remark Input Modal Overlay */}
-      <RemarkModal
-        isOpen={isRemarkOpen}
-        onClose={() => setRemarkOpen(false)}
-        leadName={lead.prospectFullName}
-        onSave={async (remarkText) => {
-          setRemarkOpen(false);
-          await handleStatusChange("remarked", remarkText);
-        }}
-      />
+      {remarkTargetStatus === "remarked" ? (
+        <RemarkModal
+          isOpen={isRemarkOpen}
+          onClose={() => setRemarkOpen(false)}
+          leadName={lead.prospectFullName}
+          onSave={async (remarkText, reminder) => {
+            setRemarkOpen(false);
+            await handleStatusChange("remarked", remarkText, reminder);
+          }}
+        />
+      ) : (
+        <ContactRemarkModal
+          isOpen={isRemarkOpen}
+          onClose={() => setRemarkOpen(false)}
+          leadName={lead.prospectFullName}
+          onSave={async (remarkText) => {
+            setRemarkOpen(false);
+            await handleStatusChange("contacted", remarkText);
+          }}
+        />
+      )}
 
       {/* AI Cold Call Script Modal Overlay */}
       <CallScriptModal

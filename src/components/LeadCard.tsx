@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { Lead } from "@prisma/client";
+import { Lead } from "@/generated/client";
 import { MapPin, Briefcase, Building, MessageSquare, Layers, ArrowRight } from "lucide-react";
 import { getNameColor, getNameInitials, getStatusColor } from "@/lib/nameToColor";
 import { cn, formatDate } from "@/lib/utils";

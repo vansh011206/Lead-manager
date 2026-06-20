@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { Search, X, Loader2, FileText, ArrowRight } from "lucide-react";
+import { Search, X, Loader2, FileText, ArrowRight, Phone } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface SearchResult {
@@ -10,6 +10,8 @@ interface SearchResult {
   businessName: string | null;
   prospectFullName: string;
   status: string;
+  contactMobilePhone?: string | null;
+  contactPhoneNumbers?: string | null;
   uploadBatch: {
     fileName: string;
   } | null;
@@ -91,7 +93,7 @@ export default function GlobalSearch() {
   };
 
   return (
-    <div ref={containerRef} className="relative w-full z-[999]">
+    <div ref={containerRef} className="relative w-full z-30">
       {/* Search Input Box */}
       <div className="relative flex items-center">
         <Search className="absolute left-3.5 text-slate-400 pointer-events-none" size={18} />
@@ -100,7 +102,7 @@ export default function GlobalSearch() {
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           onFocus={() => query.trim().length >= 2 && setIsOpen(true)}
-          placeholder="Search restaurant or contact..."
+          placeholder="Search restaurant, contact or phone..."
           className="w-full pl-11 pr-10 py-2.5 text-sm bg-slate-50 hover:bg-slate-100/70 focus:bg-white text-slate-800 placeholder-slate-400 border border-slate-200/80 focus:border-[#0D99FF] rounded-2xl outline-none transition-all focus:shadow-sm"
         />
         {isLoading ? (
@@ -117,7 +119,7 @@ export default function GlobalSearch() {
 
       {/* Dropdown Results list */}
       {isOpen && (
-        <div className="absolute left-0 right-0 mt-2 bg-white border border-slate-200 rounded-2xl shadow-xl z-[999] overflow-hidden max-h-[400px] flex flex-col">
+        <div className="absolute left-0 right-0 mt-2 bg-white border border-slate-200 rounded-2xl shadow-xl z-30 overflow-hidden max-h-[400px] flex flex-col">
           {/* Header */}
           <div className="px-4 py-2 bg-slate-50 border-b border-slate-100 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
             Matching prospects
@@ -162,6 +164,19 @@ export default function GlobalSearch() {
                           </span>
                         </div>
                       )}
+
+                      {(() => {
+                        const phoneToShow = lead.contactMobilePhone || lead.contactPhoneNumbers;
+                        if (!phoneToShow) return null;
+                        return (
+                          <div className="flex items-center text-[11px] text-slate-400 font-medium mt-1 gap-1">
+                            <Phone size={12} className="text-slate-400 shrink-0" />
+                            <span className="truncate max-w-[220px]">
+                              {phoneToShow}
+                            </span>
+                          </div>
+                        );
+                      })()}
                     </div>
 
                     <div className="flex flex-col items-end gap-1.5 shrink-0">

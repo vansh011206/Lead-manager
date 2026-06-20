@@ -1,4 +1,4 @@
-import { Lead } from "@prisma/client";
+import { Lead } from "@/generated/client";
 
 export interface MappedLead {
   rowNum?: number | null;

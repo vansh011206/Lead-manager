@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { getPhoneRegexPatterns } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
 
@@ -38,9 +39,33 @@ export async function GET(request: Request) {
     }
 
     if (search) {
+      const phonePatterns = getPhoneRegexPatterns(search);
+      let matchedIds: string[] = [];
+
+      if (phonePatterns.length > 0) {
+        try {
+          const orFilter = phonePatterns.flatMap((pattern) => [
+            { contactMobilePhone: { $regex: pattern, $options: "i" } },
+            { contactPhoneNumbers: { $regex: pattern, $options: "i" } },
+          ]);
+          const rawResults = await (prisma.lead as any).findRaw({
+            filter: {
+              $or: orFilter,
+            },
+            options: {
+              projection: { _id: 1 },
+            },
+          });
+          matchedIds = (rawResults as any[]).map((doc) => doc._id?.$oid).filter(Boolean);
+        } catch (err) {
+          console.error("Raw search error in leads route:", err);
+        }
+      }
+
       where.OR = [
         { prospectFullName: { contains: search, mode: "insensitive" } },
         { businessName: { contains: search, mode: "insensitive" } },
+        ...(matchedIds.length > 0 ? [{ id: { in: matchedIds } }] : []),
       ];
     }
 

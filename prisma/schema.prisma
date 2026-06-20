@@ -5,6 +5,7 @@ datasource db {
 
 generator client {
   provider = "prisma-client-js"
+  output   = "../src/generated/client"
 }
 
 model Lead {
@@ -57,14 +58,15 @@ model User {
 }
 
 model Meeting {
-  id           String   @id @default(auto()) @map("_id") @db.ObjectId
-  leadId       String   @db.ObjectId
-  lead         Lead     @relation(fields: [leadId], references: [id], onDelete: Cascade)
-  title        String
-  agenda       String?
-  scheduledAt  DateTime
-  emailSent    Boolean  @default(false)
-  reminderSent Boolean  @default(false)
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  id             String   @id @default(auto()) @map("_id") @db.ObjectId
+  leadId         String   @db.ObjectId
+  lead           Lead     @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  title          String
+  agenda         String?
+  scheduledAt    DateTime
+  emailSent      Boolean  @default(false)
+  reminderSent   Boolean  @default(false)
+  recipientEmail String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 }
