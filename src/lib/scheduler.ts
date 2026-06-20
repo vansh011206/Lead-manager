@@ -114,7 +114,7 @@ export async function checkAndSendReminders() {
           timeZone: "Asia/Kolkata",
         }) + " (IST)";
 
-        const subject = `⚠️ Call Reminder: Lead "${meeting.lead.prospectFullName}" callback scheduled!`;
+        const subject = `⚠️ Call Reminder: Call back "${meeting.lead.prospectFullName}" in 10 minutes!`;
         
         const html = `
           <div style="font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; border: 1px solid #e2e8f0; border-radius: 20px; background-color: #ffffff; color: #1e293b; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);">
@@ -125,16 +125,16 @@ export async function checkAndSendReminders() {
             </div>
             
             <h2 style="font-size: 20px; font-weight: 800; color: #0f172a; margin: 0 0 12px 0; line-height: 1.25;">
-              Callback scheduled with <span style="color: #0D99FF;">${meeting.lead.prospectFullName}</span> in 10 minutes
+              Call back <span style="color: #0D99FF;">${meeting.lead.prospectFullName}</span> in 10 minutes
             </h2>
             
             <p style="font-size: 14px; line-height: 1.5; color: #64748b; margin: 0 0 24px 0;">
-              This is a reminder that you scheduled a callback reminder for this prospect. Here are the callback details:
+              This is a reminder to call back this prospect. The scheduled call time is approaching. Here are the details:
             </p>
 
             <div style="background-color: #f8fafc; border: 1px solid #f1f5f9; border-radius: 14px; padding: 16px; margin-bottom: 24px;">
               <div style="margin-bottom: 12px;">
-                <span style="font-size: 10px; font-weight: 855; color: #94a3b8; text-transform: uppercase; display: block; margin-bottom: 2px; letter-spacing: 0.05em;">Scheduled Callback Time</span>
+                <span style="font-size: 10px; font-weight: 855; color: #94a3b8; text-transform: uppercase; display: block; margin-bottom: 2px; letter-spacing: 0.05em;">Scheduled Call Time</span>
                 <span style="font-size: 14px; font-weight: 700; color: #0f172a;">${formattedDate}</span>
               </div>
               <div>
