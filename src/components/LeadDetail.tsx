@@ -130,7 +130,7 @@ export default function LeadDetail({ lead, backUrl, onAction, isLoading, hasNext
   };
 
   return (
-    <div className="space-y-6 text-slate-700 pb-10">
+    <div className="space-y-6 text-slate-700 pb-32 sm:pb-10">
       {/* Breadcrumbs & Back Button */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex items-center space-x-2 text-xs font-bold text-slate-400 uppercase tracking-wider">
@@ -593,7 +593,7 @@ export default function LeadDetail({ lead, backUrl, onAction, isLoading, hasNext
       </div>
 
       {/* Floating Action Dock Panel */}
-      <div className="sticky bottom-4 sm:bottom-6 z-40 w-full max-w-3xl lg:max-w-4xl mx-auto px-3 sm:px-4 mt-8 animate-scale-up">
+      <div className="fixed bottom-4 left-0 right-0 sm:sticky sm:bottom-6 sm:left-auto sm:right-auto z-40 w-full max-w-3xl lg:max-w-4xl mx-auto px-3 sm:px-4 mt-8 animate-scale-up">
         <div className="bg-white border border-slate-200 shadow-xl rounded-2xl p-3 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="w-[280px] pr-4 hidden sm:block shrink-0">
             <p className="text-[10px] font-extrabold text-[#0D99FF] uppercase tracking-widest">
