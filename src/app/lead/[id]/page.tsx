@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import { useApp } from "@/components/Providers";
@@ -103,6 +103,73 @@ function LeadDetailPageContent() {
       loadNavigation();
     }
   }, [id, searchParams]);
+
+  // Keep latest nextId and backUrl in refs to avoid restarting SSE connection on pagination changes
+  const nextIdRef = useRef<string | null>(null);
+  const backUrlRef = useRef<string>(backUrl);
+
+  useEffect(() => {
+    nextIdRef.current = nextId;
+  }, [nextId]);
+
+  useEffect(() => {
+    backUrlRef.current = backUrl;
+  }, [backUrl]);
+
+  // 3. Subscribe to real-time status updates using Server-Sent Events (SSE)
+  useEffect(() => {
+    if (!id) return;
+
+    let isNavigating = false;
+    const eventSource = new EventSource(`/api/leads/${id}/sse`);
+
+    eventSource.onmessage = (event) => {
+      try {
+        if (event.data === "connected") {
+          console.log("[SSE] Connected to lead updates channel");
+          return;
+        }
+
+        const data = JSON.parse(event.data);
+        if (data.action === "update" || data.action === "delete") {
+          if (isNavigating) return;
+          isNavigating = true;
+
+          // Notify the user about the cross-device action
+          if (data.action === "delete") {
+            toast.error("This lead has been deleted on another device.");
+          } else {
+            const displayStatus = data.status === "contacted" ? "contacted" : data.status === "declined" ? "declined" : data.status;
+            toast.info(`Lead marked as ${displayStatus} on another device.`);
+          }
+
+          // Trigger dynamic sidebar/counter updates in real-time
+          refreshCounts();
+
+          // Wait for transition visual feedback then slide/navigate automatically
+          setTimeout(() => {
+            if (nextIdRef.current) {
+              router.push(`/lead/${nextIdRef.current}?${searchParams.toString()}`);
+            } else {
+              toast.info("No more leads in this filtered list. Returning to list view.");
+              router.push(backUrlRef.current);
+            }
+          }, 1500);
+        }
+      } catch (err) {
+        console.error("[SSE] Error parsing SSE message:", err);
+      }
+    };
+
+    eventSource.onerror = (err) => {
+      console.error("[SSE] Connection error:", err);
+    };
+
+    return () => {
+      console.log("[SSE] Closing connection for lead:", id);
+      eventSource.close();
+    };
+  }, [id, router, searchParams, refreshCounts]);
 
   const hasNext = !!nextId;
   const hasPrev = !!prevId;

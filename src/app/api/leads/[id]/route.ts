@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { sendEmail } from "@/lib/scheduler";
+import { sseEmitter } from "@/lib/sse";
 
 export async function GET(
   request: Request,
@@ -151,6 +152,14 @@ export async function PUT(
       }
     }
 
+    // Emit real-time synchronization event
+    sseEmitter.emit("lead-update", {
+      id,
+      action: "update",
+      status: updatedLead.status,
+      remark: updatedLead.remark,
+    });
+
     return NextResponse.json(updatedLead);
   } catch (error) {
     console.error("PUT lead error:", error);
@@ -166,6 +175,12 @@ export async function DELETE(
     const id = params.id;
     await prisma.lead.delete({
       where: { id },
+    });
+
+    // Emit real-time synchronization event
+    sseEmitter.emit("lead-update", {
+      id,
+      action: "delete",
     });
 
     return NextResponse.json({ message: "Lead deleted successfully" });
