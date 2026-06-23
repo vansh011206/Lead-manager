@@ -13,6 +13,7 @@ export async function GET(request: Request) {
     const industry = searchParams.get("industry") || "";
     const batchId = searchParams.get("batchId") || "";
     const sortBy = searchParams.get("sortBy") || "date_desc";
+    const currentId = searchParams.get("currentId") || "";
 
     const where: any = {};
 
@@ -59,8 +60,17 @@ export async function GET(request: Request) {
       select: { id: true },
     });
 
+    const ids = leads.map((l) => l.id);
+
+    if (currentId) {
+      const currentIndex = ids.indexOf(currentId);
+      const prevId = currentIndex > 0 ? ids[currentIndex - 1] : null;
+      const nextId = currentIndex !== -1 && currentIndex < ids.length - 1 ? ids[currentIndex + 1] : null;
+      return NextResponse.json({ prevId, nextId });
+    }
+
     return NextResponse.json({
-      ids: leads.map((l) => l.id),
+      ids,
     });
   } catch (error) {
     console.error("GET filtered leads IDs error:", error);

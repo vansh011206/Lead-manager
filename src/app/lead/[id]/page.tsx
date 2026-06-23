@@ -41,7 +41,8 @@ function LeadDetailPageContent() {
   const id = params.id as string;
 
   const [lead, setLead] = useState<Lead | null>(null);
-  const [filteredIds, setFilteredIds] = useState<string[]>([]);
+  const [prevId, setPrevId] = useState<string | null>(null);
+  const [nextId, setNextId] = useState<string | null>(null);
   const [isLoadingLead, setIsLoadingLead] = useState(true);
   const [isPerformingAction, setIsPerformingAction] = useState(false);
 
@@ -58,27 +59,17 @@ function LeadDetailPageContent() {
   // Back button URL
   const backUrl = `${fromPath}${getCleanParams() ? `?${getCleanParams()}` : ""}`;
 
-  // Fetch lead data and ordered list of matching lead IDs
+  // 1. Fetch single lead details (loads instantly)
   useEffect(() => {
-    const loadData = async () => {
+    const loadLead = async () => {
       try {
         setIsLoadingLead(true);
-        
-        // 1. Fetch single lead details
         const leadRes = await fetch(`/api/leads/${id}`);
         if (!leadRes.ok) {
           throw new Error("Lead not found");
         }
         const leadData = await leadRes.json();
         setLead(leadData);
-
-        // 2. Fetch the filtered lead list in order to calculate next lead
-        // We pass the active filters to the API (ignoring 'from' which is handled in the API)
-        const filterRes = await fetch(`/api/leads/filter?${searchParams.toString()}`);
-        if (filterRes.ok) {
-          const filterData = await filterRes.json();
-          setFilteredIds(filterData.ids || []);
-        }
       } catch (err: any) {
         console.error("Error loading lead:", err);
         toast.error(err.message || "Failed to load lead details");
@@ -89,16 +80,32 @@ function LeadDetailPageContent() {
     };
 
     if (id) {
-      loadData();
+      loadLead();
     }
-  }, [id, searchParams, router]);
+  }, [id, router]);
 
-  // Compute position in filtered list
-  const currentIndex = filteredIds.indexOf(id);
-  const hasNext = currentIndex !== -1 && currentIndex < filteredIds.length - 1;
-  const nextId = hasNext ? filteredIds[currentIndex + 1] : null;
-  const hasPrev = currentIndex > 0;
-  const prevId = hasPrev ? filteredIds[currentIndex - 1] : null;
+  // 2. Fetch the filtered lead list in order to calculate next/prev lead IDs (lazy loaded)
+  useEffect(() => {
+    const loadNavigation = async () => {
+      try {
+        const filterRes = await fetch(`/api/leads/filter?${searchParams.toString()}&currentId=${id}`);
+        if (filterRes.ok) {
+          const filterData = await filterRes.json();
+          setPrevId(filterData.prevId || null);
+          setNextId(filterData.nextId || null);
+        }
+      } catch (err) {
+        console.error("Error loading pagination navigation:", err);
+      }
+    };
+
+    if (id) {
+      loadNavigation();
+    }
+  }, [id, searchParams]);
+
+  const hasNext = !!nextId;
+  const hasPrev = !!prevId;
 
   // Action handler (PUT request to update status and remark)
   const handleAction = async (status: string, remark?: string, reminder?: any) => {

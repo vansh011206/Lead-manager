@@ -99,40 +99,10 @@ export async function GET(request: Request) {
     ]);
 
     // Fetch unique options for filtering
-    const [countriesRaw, regionsRaw, industriesRaw, batches] = await Promise.all([
-      prisma.lead.findMany({
-        where: { businessCountry: { not: null } },
-        select: { businessCountry: true },
-        distinct: ["businessCountry"],
-      }),
-      prisma.lead.findMany({
-        where: { businessRegion: { not: null } },
-        select: { businessRegion: true },
-        distinct: ["businessRegion"],
-      }),
-      prisma.lead.findMany({
-        where: { businessNaicsDescription: { not: null } },
-        select: { businessNaicsDescription: true },
-        distinct: ["businessNaicsDescription"],
-      }),
-      prisma.uploadBatch.findMany({
-        select: { id: true, fileName: true, uploadedAt: true },
-        orderBy: { uploadedAt: "desc" },
-      }),
-    ]);
-
-    const countries = countriesRaw
-      .map((c) => c.businessCountry as string)
-      .filter(Boolean)
-      .sort();
-    const regions = regionsRaw
-      .map((r) => r.businessRegion as string)
-      .filter(Boolean)
-      .sort();
-    const industries = industriesRaw
-      .map((i) => i.businessNaicsDescription as string)
-      .filter(Boolean)
-      .sort();
+    const batches = await prisma.uploadBatch.findMany({
+      select: { id: true, fileName: true, uploadedAt: true },
+      orderBy: { uploadedAt: "desc" },
+    });
 
     return NextResponse.json({
       leads,
@@ -140,9 +110,9 @@ export async function GET(request: Request) {
       page,
       totalPages: Math.ceil(total / limit),
       filterOptions: {
-        countries,
-        regions,
-        industries,
+        countries: [],
+        regions: [],
+        industries: [],
         batches,
       },
     });
