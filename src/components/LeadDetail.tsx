@@ -16,6 +16,7 @@ import {
   Check,
   XCircle,
   ChevronRight,
+  ChevronLeft,
   Phone,
   Trash2,
   Loader2,
@@ -64,9 +65,21 @@ interface LeadDetailProps {
   onAction: (status: string, remark?: string, reminder?: any) => Promise<void>;
   isLoading: boolean;
   hasNext: boolean;
+  onNext?: () => void;
+  hasPrev: boolean;
+  onPrev?: () => void;
 }
 
-export default function LeadDetail({ lead, backUrl, onAction, isLoading, hasNext }: LeadDetailProps) {
+export default function LeadDetail({
+  lead,
+  backUrl,
+  onAction,
+  isLoading,
+  hasNext,
+  onNext,
+  hasPrev,
+  onPrev,
+}: LeadDetailProps) {
   const router = useRouter();
   const [isRemarkOpen, setRemarkOpen] = useState(false);
   const [isScriptOpen, setScriptOpen] = useState(false);
@@ -145,26 +158,60 @@ export default function LeadDetail({ lead, backUrl, onAction, isLoading, hasNext
           <span className="text-[#0D99FF] font-extrabold">{lead.prospectFullName}</span>
         </div>
 
-        <div className="flex items-center space-x-2">
+        <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+          {hasPrev && onPrev && (
+            <button
+              onClick={onPrev}
+              disabled={isLoading || isDeleting}
+              className="group flex items-center space-x-1 sm:space-x-1.5 text-xs font-bold px-2.5 sm:px-4 py-2 sm:py-2.5 rounded-xl border border-slate-200 bg-slate-50/55 hover:bg-slate-100 hover:border-slate-300 text-slate-700 transition-all duration-200 shadow-sm hover:-translate-y-0.5 disabled:opacity-50 disabled:pointer-events-none"
+            >
+              <ChevronLeft size={14} className="transition-transform group-hover:-translate-x-0.5 shrink-0" />
+              <span>
+                <span className="sm:hidden">Prev</span>
+                <span className="hidden sm:inline">Previous Lead</span>
+              </span>
+            </button>
+          )}
+
+          {hasNext && onNext && (
+            <button
+              onClick={onNext}
+              disabled={isLoading || isDeleting}
+              className="group flex items-center space-x-1 sm:space-x-1.5 text-xs font-bold px-2.5 sm:px-4 py-2 sm:py-2.5 rounded-xl border border-blue-200 bg-blue-50/50 hover:bg-[#0D99FF] hover:border-[#0D99FF] text-[#0D99FF] hover:text-white transition-all duration-200 shadow-sm shadow-blue-100/50 hover:-translate-y-0.5 disabled:opacity-50 disabled:pointer-events-none"
+            >
+              <span>
+                <span className="sm:hidden">Next</span>
+                <span className="hidden sm:inline">Next Lead</span>
+              </span>
+              <ChevronRight size={14} className="transition-transform group-hover:translate-x-0.5 shrink-0" />
+            </button>
+          )}
+
           <button
             onClick={handleDelete}
             disabled={isLoading || isDeleting}
-            className="flex items-center space-x-1.5 text-xs font-bold px-4 py-2.5 bg-white hover:bg-red-50 hover:border-red-300 border border-slate-200/80 shadow-sm rounded-xl text-red-500 hover:text-red-700 transition-all"
+            className="flex items-center space-x-1 sm:space-x-1.5 text-xs font-bold px-2.5 sm:px-4 py-2 sm:py-2.5 bg-white hover:bg-red-50 hover:border-red-300 border border-slate-200/80 shadow-sm rounded-xl text-red-500 hover:text-red-700 transition-all"
           >
             {isDeleting ? (
-              <Loader2 className="animate-spin text-red-500" size={14} />
+              <Loader2 className="animate-spin text-red-500 shrink-0" size={14} />
             ) : (
-              <Trash2 size={14} />
+              <Trash2 size={14} className="shrink-0" />
             )}
-            <span>Delete Lead</span>
+            <span>
+              <span className="sm:hidden">Delete</span>
+              <span className="hidden sm:inline">Delete Lead</span>
+            </span>
           </button>
 
           <Link
             href={backUrl}
-            className="flex items-center space-x-1.5 self-start text-xs font-bold px-4 py-2.5 bg-white hover:bg-slate-50 border border-slate-200/80 shadow-sm rounded-xl text-slate-600 hover:text-slate-800 transition-all"
+            className="flex items-center space-x-1 sm:space-x-1.5 text-xs font-bold px-2.5 sm:px-4 py-2 sm:py-2.5 bg-white hover:bg-slate-50 border border-slate-200/80 shadow-sm rounded-xl text-slate-600 hover:text-slate-800 transition-all"
           >
-            <ArrowLeft size={14} />
-            <span>Back to List</span>
+            <ArrowLeft size={14} className="shrink-0" />
+            <span>
+              <span className="sm:hidden">Back</span>
+              <span className="hidden sm:inline">Back to List</span>
+            </span>
           </Link>
         </div>
       </div>

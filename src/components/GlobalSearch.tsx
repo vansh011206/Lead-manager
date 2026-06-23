@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { Search, X, Loader2, FileText, ArrowRight, Phone } from "lucide-react";
+import { Search, X, Loader2, FileText, ArrowRight, Phone, ArrowLeft } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface SearchResult {
@@ -23,7 +23,9 @@ export default function GlobalSearch() {
   const [results, setResults] = useState<SearchResult[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
+  const [isMobileExpanded, setIsMobileExpanded] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     // Click outside handler
@@ -93,9 +95,67 @@ export default function GlobalSearch() {
   };
 
   return (
-    <div ref={containerRef} className="relative w-full z-30">
-      {/* Search Input Box */}
-      <div className="relative flex items-center">
+    <div ref={containerRef} className="relative w-full md:z-30 flex items-center justify-end md:justify-start">
+      {/* Mobile view: closed search icon button */}
+      {!isMobileExpanded && (
+        <button
+          onClick={() => {
+            setIsMobileExpanded(true);
+            setTimeout(() => inputRef.current?.focus(), 100);
+          }}
+          className="md:hidden p-2 rounded-lg text-slate-500 hover:text-slate-800 hover:bg-slate-100 transition-colors shrink-0"
+          aria-label="Search"
+        >
+          <Search size={22} />
+        </button>
+      )}
+
+      {/* Mobile view: expanded overlay search input */}
+      <div className={cn(
+        "fixed inset-x-0 top-0 h-20 px-6 flex items-center gap-3 bg-white z-50 md:hidden transition-all duration-200 shadow-md",
+        isMobileExpanded ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
+      )}>
+        {isMobileExpanded && (
+          <>
+            <button
+              onClick={() => {
+                setIsMobileExpanded(false);
+                setQuery("");
+                setResults([]);
+                setIsOpen(false);
+              }}
+              className="p-2 -ml-2 rounded-lg text-slate-500 hover:text-slate-800 hover:bg-slate-100 transition-colors shrink-0"
+              aria-label="Close search"
+            >
+              <ArrowLeft size={20} />
+            </button>
+            <div className="relative flex-1">
+              <input
+                ref={inputRef}
+                type="text"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                onFocus={() => query.trim().length >= 2 && setIsOpen(true)}
+                placeholder="Search restaurant, contact or phone..."
+                className="w-full pl-4 pr-10 py-2 text-sm bg-slate-50 focus:bg-white text-slate-800 placeholder-slate-400 border border-slate-200/80 focus:border-[#0D99FF] rounded-xl outline-none transition-all focus:shadow-sm"
+              />
+              {isLoading ? (
+                <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 animate-spin" size={16} />
+              ) : query ? (
+                <button
+                  onClick={handleClear}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 p-0.5 rounded-full text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
+                >
+                  <X size={16} />
+                </button>
+              ) : null}
+            </div>
+          </>
+        )}
+      </div>
+
+      {/* Desktop view: always visible search input */}
+      <div className="hidden md:flex relative items-center w-full">
         <Search className="absolute left-3.5 text-slate-400 pointer-events-none" size={18} />
         <input
           type="text"
@@ -119,7 +179,10 @@ export default function GlobalSearch() {
 
       {/* Dropdown Results list */}
       {isOpen && (
-        <div className="absolute left-0 right-0 mt-2 bg-white border border-slate-200 rounded-2xl shadow-xl z-30 overflow-hidden max-h-[400px] flex flex-col">
+        <div className={cn(
+          "bg-white border border-slate-200 rounded-2xl shadow-xl z-50 overflow-hidden max-h-[400px] flex flex-col",
+          isMobileExpanded ? "fixed top-20 left-4 right-4 mx-auto w-[calc(100vw-32px)]" : "absolute left-0 right-0 mt-2"
+        )}>
           {/* Header */}
           <div className="px-4 py-2 bg-slate-50 border-b border-slate-100 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
             Matching prospects

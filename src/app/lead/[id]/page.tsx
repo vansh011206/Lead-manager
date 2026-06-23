@@ -97,6 +97,8 @@ function LeadDetailPageContent() {
   const currentIndex = filteredIds.indexOf(id);
   const hasNext = currentIndex !== -1 && currentIndex < filteredIds.length - 1;
   const nextId = hasNext ? filteredIds[currentIndex + 1] : null;
+  const hasPrev = currentIndex > 0;
+  const prevId = hasPrev ? filteredIds[currentIndex - 1] : null;
 
   // Action handler (PUT request to update status and remark)
   const handleAction = async (status: string, remark?: string, reminder?: any) => {
@@ -155,6 +157,18 @@ function LeadDetailPageContent() {
     );
   }
 
+  const handleNext = () => {
+    if (nextId) {
+      router.push(`/lead/${nextId}?${searchParams.toString()}`);
+    }
+  };
+
+  const handlePrev = () => {
+    if (prevId) {
+      router.push(`/lead/${prevId}?${searchParams.toString()}`);
+    }
+  };
+
   if (!lead) return null;
 
   return (
@@ -166,6 +180,9 @@ function LeadDetailPageContent() {
         onAction={handleAction}
         isLoading={isPerformingAction}
         hasNext={!!nextId}
+        onNext={handleNext}
+        hasPrev={hasPrev}
+        onPrev={handlePrev}
       />
     </div>
   );
