@@ -27,7 +27,7 @@ export default function RemarkModal({
   const [reminderTime, setReminderTime] = useState("");
   const [selectedHoursOffset, setSelectedHoursOffset] = useState<number>(1);
   
-  const [recipientEmail, setRecipientEmail] = useState("");
+  const [selectedEmails, setSelectedEmails] = useState<string[]>([]);
   const [availableEmails, setAvailableEmails] = useState<string[]>([]);
   const [isEmailDropdownOpen, setIsEmailDropdownOpen] = useState(false);
 
@@ -44,7 +44,7 @@ export default function RemarkModal({
           const data = await res.json();
           setAvailableEmails(data);
           if (data.length > 0) {
-            setRecipientEmail(data[0]);
+            setSelectedEmails([data[0]]);
           }
         }
       } catch (err) {
@@ -87,7 +87,7 @@ export default function RemarkModal({
       setReminderTime(`${hh}:${min}`);
 
       if (availableEmails.length > 0) {
-        setRecipientEmail(availableEmails[0]);
+        setSelectedEmails([availableEmails[0]]);
       }
 
       setTimeout(() => {
@@ -133,14 +133,14 @@ export default function RemarkModal({
         scheduledAt = d.toISOString();
       }
 
-      if (!recipientEmail) {
-        toast.error("Please select a recipient email address for the reminder");
+      if (selectedEmails.length === 0) {
+        toast.error("Please select at least one recipient email address for the reminder");
         return;
       }
       
       reminderData = {
         scheduledAt,
-        recipientEmail,
+        recipientEmail: selectedEmails.join(", "),
       };
 
       // Auto-populate remark if empty but reminder is set
@@ -367,21 +367,24 @@ export default function RemarkModal({
                     onClick={() => setIsEmailDropdownOpen(!isEmailDropdownOpen)}
                     className="w-full flex items-center justify-between px-3 py-2 bg-white border border-slate-200 rounded-xl hover:border-slate-350 focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition-all text-slate-700 font-bold text-xs outline-none"
                   >
-                    <span>{recipientEmail || "Select email address"}</span>
+                    <span className="truncate mr-2">{selectedEmails.length > 0 ? selectedEmails.join(", ") : "Select email addresses"}</span>
                     <ChevronDown size={14} className={cn("text-slate-400 transition-transform", isEmailDropdownOpen && "rotate-180")} />
                   </button>
 
                   {isEmailDropdownOpen && (
                     <div className="absolute z-50 left-0 right-0 bottom-full mb-1 bg-white border border-slate-200 rounded-xl shadow-lg py-1.5 max-h-40 overflow-y-auto animate-fade-in">
                       {availableEmails.map((email) => {
-                        const isSelected = recipientEmail === email;
+                        const isSelected = selectedEmails.includes(email);
                         return (
                           <button
                             key={email}
                             type="button"
                             onClick={() => {
-                              setRecipientEmail(email);
-                              setIsEmailDropdownOpen(false);
+                              setSelectedEmails(prev =>
+                                prev.includes(email)
+                                  ? prev.filter(e => e !== email)
+                                  : [...prev, email]
+                              );
                             }}
                             className={cn(
                               "w-full text-left px-3.5 py-2 text-xs font-bold transition-all flex items-center justify-between",

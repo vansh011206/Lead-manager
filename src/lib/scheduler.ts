@@ -102,7 +102,7 @@ export async function checkAndSendReminders() {
 
         console.log(`[Scheduler] Sending 10-minute callback reminder to ${meeting.recipientEmail} for lead ${meeting.lead.prospectFullName}`);
 
-        const recipients = [meeting.recipientEmail];
+        const recipients = meeting.recipientEmail.split(",").map(e => e.trim()).filter(Boolean);
         
         const formattedDate = new Date(meeting.scheduledAt).toLocaleString("en-US", {
           weekday: "long",
@@ -376,23 +376,24 @@ export async function sendImmediateMeetingEmail(meeting: any, lead: any) {
 }
 
 // Global reference for Next.js hot reload safety
-const globalForScheduler = global as unknown as { schedulerStarted: boolean };
+const globalForScheduler = global as unknown as {
+  schedulerStarted?: boolean;
+  intervalId?: NodeJS.Timeout;
+};
 
 export function startReminderScheduler() {
-  if (globalForScheduler.schedulerStarted) {
-    console.log("[Scheduler] Background scheduler is already running (reused global instance).");
-    return;
+  if (globalForScheduler.intervalId) {
+    clearInterval(globalForScheduler.intervalId);
   }
 
-  globalForScheduler.schedulerStarted = true;
-  console.log("[Scheduler] Initializing background reminder scheduler (1 minute polling interval)...");
+  console.log("[Scheduler] Initializing background reminder scheduler (15 seconds polling interval)...");
 
   // Run check immediately on startup
   checkAndSendReminders();
 
-  // Schedule to run every 1 minute
-  setInterval(() => {
+  // Schedule to run every 15 seconds
+  globalForScheduler.intervalId = setInterval(() => {
     console.log("[Scheduler] Polling database for upcoming meetings...");
     checkAndSendReminders();
-  }, 60 * 1000);
+  }, 15 * 1000);
 }

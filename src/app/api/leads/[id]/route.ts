@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { sendEmail } from "@/lib/scheduler";
+import { sendEmail, checkAndSendReminders } from "@/lib/scheduler";
 import { sseEmitter } from "@/lib/sse";
 
 export async function GET(
@@ -145,11 +145,15 @@ export async function PUT(
           </div>
         `;
 
-        await sendEmail({ to: [body.reminder.recipientEmail], subject, html });
+        const recipients = body.reminder.recipientEmail.split(",").map((e: string) => e.trim()).filter(Boolean);
+        await sendEmail({ to: recipients, subject, html });
         console.log(`[API] Immediate call reminder email sent to ${body.reminder.recipientEmail} for lead ${existingLead.prospectFullName}`);
       } catch (emailErr) {
         console.error("[API] Failed to send immediate callback reminder email:", emailErr);
       }
+      
+      // Asynchronously trigger checkAndSendReminders to send the actual 10-min reminder if scheduled near
+      checkAndSendReminders().catch((err) => console.error("[API] Failed to run immediate checkAndSendReminders:", err));
     }
 
     // Emit real-time synchronization event
