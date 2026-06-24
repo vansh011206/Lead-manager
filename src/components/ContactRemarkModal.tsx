@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { X, MessageSquare, Save } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -18,8 +19,13 @@ export default function ContactRemarkModal({
   leadName,
 }: ContactRemarkModalProps) {
   const [remark, setRemark] = useState("");
+  const [mounted, setMounted] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const modalRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // Initialize fields on open
   useEffect(() => {
@@ -41,7 +47,7 @@ export default function ContactRemarkModal({
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [isOpen, onClose]);
 
-  if (!isOpen) return null;
+  if (!isOpen || !mounted) return null;
 
   const handleSave = () => {
     let finalRemark = remark.trim();
@@ -57,10 +63,10 @@ export default function ContactRemarkModal({
     }
   };
 
-  return (
+  return createPortal(
     <div
       onClick={handleBackdropClick}
-      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4 animate-fade-in"
+      className="fixed inset-0 z-[9999] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 animate-fade-in"
     >
       <div
         ref={modalRef}
@@ -120,6 +126,7 @@ export default function ContactRemarkModal({
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
