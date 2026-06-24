@@ -21,6 +21,11 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className={poppins.variable}>
+      <head>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+      </head>
       <body className={`${poppins.className} bg-[#F8FAFC] text-[#1E293B] min-h-screen antialiased selection:bg-[#0D99FF]/10 selection:text-[#0D99FF]`}>
         <Providers>
           {children}
