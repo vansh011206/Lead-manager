@@ -181,7 +181,7 @@ export default function GlobalSearch() {
       {isOpen && (
         <div className={cn(
           "bg-white border border-slate-200 rounded-2xl shadow-xl z-50 overflow-hidden max-h-[400px] flex flex-col",
-          isMobileExpanded ? "fixed top-20 left-4 right-4 mx-auto w-[calc(100vw-32px)]" : "absolute left-0 right-0 mt-2"
+          isMobileExpanded ? "fixed top-20 left-4 right-4 mx-auto w-[calc(100vw-32px)]" : "absolute top-full left-0 right-0 mt-2"
         )}>
           {/* Header */}
           <div className="px-4 py-2 bg-slate-50 border-b border-slate-100 text-[10px] font-bold text-slate-400 uppercase tracking-wider">

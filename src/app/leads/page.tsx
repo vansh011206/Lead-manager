@@ -111,7 +111,7 @@ function LeadsPageContent() {
         if (!params.has("status")) {
           params.set("status", "new");
         }
-        const res = await fetch(`/api/leads?${params.toString()}`);
+        const res = await fetch(`/api/leads?${params.toString()}&_t=${Date.now()}`);
         if (res.ok) {
           const data = await res.json();
           setLeads(data.leads);

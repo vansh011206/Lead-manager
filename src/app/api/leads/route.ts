@@ -64,7 +64,19 @@ export async function GET(request: Request) {
 
       where.OR = [
         { prospectFullName: { contains: search, mode: "insensitive" } },
+        { prospectJobTitle: { contains: search, mode: "insensitive" } },
         { businessName: { contains: search, mode: "insensitive" } },
+        { businessWebsite: { contains: search, mode: "insensitive" } },
+        { businessCountry: { contains: search, mode: "insensitive" } },
+        { businessRegion: { contains: search, mode: "insensitive" } },
+        { businessNaicsDescription: { contains: search, mode: "insensitive" } },
+        { contactProfessionalEmail: { contains: search, mode: "insensitive" } },
+        { contactEmails: { contains: search, mode: "insensitive" } },
+        {
+          uploadBatch: {
+            fileName: { contains: search, mode: "insensitive" }
+          }
+        },
         ...(matchedIds.length > 0 ? [{ id: { in: matchedIds } }] : []),
       ];
     }
@@ -98,11 +110,23 @@ export async function GET(request: Request) {
       prisma.lead.count({ where }),
     ]);
 
-    // Fetch unique options for filtering
+    // Fetch unique options for filtering based on the requested status if specified
+    const batchesWhere: any = {};
+    if (status && status !== "all") {
+      batchesWhere.leads = {
+        some: {
+          status: status,
+        },
+      };
+    }
+    console.log("[API/leads] GET status:", status);
+    console.log("[API/leads] batchesWhere:", JSON.stringify(batchesWhere));
     const batches = await prisma.uploadBatch.findMany({
+      where: batchesWhere,
       select: { id: true, fileName: true, uploadedAt: true },
       orderBy: { uploadedAt: "desc" },
     });
+    console.log("[API/leads] Batches found:", batches.map(b => b.fileName));
 
     return NextResponse.json({
       leads,

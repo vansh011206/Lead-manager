@@ -39,8 +39,20 @@ export async function GET(request: Request) {
     const leads = await prisma.lead.findMany({
       where: {
         OR: [
-          { businessName: { contains: query, mode: "insensitive" } },
           { prospectFullName: { contains: query, mode: "insensitive" } },
+          { prospectJobTitle: { contains: query, mode: "insensitive" } },
+          { businessName: { contains: query, mode: "insensitive" } },
+          { businessWebsite: { contains: query, mode: "insensitive" } },
+          { businessCountry: { contains: query, mode: "insensitive" } },
+          { businessRegion: { contains: query, mode: "insensitive" } },
+          { businessNaicsDescription: { contains: query, mode: "insensitive" } },
+          { contactProfessionalEmail: { contains: query, mode: "insensitive" } },
+          { contactEmails: { contains: query, mode: "insensitive" } },
+          {
+            uploadBatch: {
+              fileName: { contains: query, mode: "insensitive" }
+            }
+          },
           ...(matchedIds.length > 0 ? [{ id: { in: matchedIds } }] : []),
         ],
       },
